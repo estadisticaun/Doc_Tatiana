@@ -4,7 +4,7 @@
 #                                                          #
 ##%######################################################%##
 
-# librerias requeridas
+# Librerias ----
 
 library(tidyverse)
 library(UnalData)
@@ -15,21 +15,43 @@ library(writexl)
 library(scales)
 library(cowplot)
 
-# Parte 1. Análisis Demográfico ----
-
-# Importar base de datos proyecciones poblacionales
+# Importar poblaciones ----
 
 Poblacion <- read_excel("Fuentes/Proy_Demográfica.xlsx", 
-                            sheet = "Demografia",
-                            guess_max = 1000)
+                        sheet = "Demografia",
+                        guess_max = 1000)
 
 
 # Importar Base de Datos zonas rurales con 
 # condiciones de difícil acceso a la educación superior 
 
 Mun_DificilES <- read_excel("Fuentes/Municipios Dificiles ES.xlsx", 
-                        sheet = "Hoja1",
-                        guess_max = 60000)
+                            sheet = "Hoja1",
+                            guess_max = 60000)
+
+
+# Importar bases de datos - Tendencias
+
+Tendencias <- read_excel("Fuentes/Asp_Adm.xlsx", 
+                         sheet = "General",
+                         guess_max = 1000)
+
+Departamentos <- read_excel("Fuentes/Asp_Adm.xlsx", 
+                            sheet = "Departamentos",
+                            guess_max = 1000) %>% 
+  mutate(Total = `2010` + `2011` + `2012` + `2013` +
+           `2014` + `2015` + `2016` + `2017` +
+           `2018` + `2019` + `2020` + `2021`) %>% 
+  select(c(Poblacion, COD_DEP, Dpto, Total))
+
+
+p1721 <- read_excel("Fuentes/Asp_Adm.xlsx", 
+                    sheet = "Pob17-21",
+                    guess_max = 1000) %>% 
+  filter(Dpto == "Total Nacional", Ano >= 2010) %>% 
+  select(Year = Ano, Total = Pob1721) %>% 
+  mutate(Poblacion = rep("Población 17 a 21 Años", 11))
+
 
 
 # Cruce con municipios dificil acceso a la educación superior
@@ -48,6 +70,7 @@ Poblacion_Total <- Poblacion %>%
 
 
 # Evolución Población Municipios difíciles ES
+
 Poblacion_DificilES <- Poblacion %>% filter(AREA != "Total") %>% 
   summarise(Total = sum(Total), .by = c(YEAR, DificilES)) %>% 
   pivot_wider(names_from = DificilES, values_from = Total)
@@ -56,6 +79,20 @@ Poblacion_DificilES <- Poblacion %>% filter(AREA != "Total") %>%
 # Población General por años
 
 Poblacion_Total <- left_join(Poblacion_Total, Poblacion_DificilES, by = "YEAR")
+
+
+# Crear Tabla con tres poblaciones
+
+Tres_pob <- Tendencias %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  pivot_wider(names_from = c(Modalidad), values_from = Total) %>% 
+  mutate(Total = Oficial + Privado,
+         Poblacion = ifelse(Poblacion == "Mpvez", "Primera Matrícula", Poblacion)) 
+
+
+# Parte 1. Análisis Demográfico ----
+
 
 # Serie General
 
@@ -167,7 +204,7 @@ Plot.Mapa(
     labelX = "", 
     labelY = "",
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
-    Labs   = list(subtitle = "Año 2023\n", caption =  "(*) Por Mil Habitantes")
+    Labs   = list(fill = "Total de Habitantes", subtitle = "Año 2023\n", caption =  "(*) Por Mil Habitantes")
   )
 )
 
@@ -241,7 +278,7 @@ Plot.Mapa(
   depto    = COD_DEP,
   mpio     = COD_MPIO,
   tipo     = "SiNoMpios",
-  SiNoLegend = c("Rural", "Urbano"),
+  SiNoLegend = c("Sí", "No"),
  # centroideMapa = c("RISARALDA"),
   titulo   = "Municipios con mayor población en áreas rurales",
   colores  = c("red", "#10F235"),
@@ -253,7 +290,7 @@ Plot.Mapa(
     Style = "SiNo", Theme = 5, anchoBorde = 0.2,
     labelX = "", 
     labelY = "",
-    Labs  = list(fill = "Municipio", subtitle = "Año 2023\n"),
+    Labs  = list(fill = "¿Municipio rural?", subtitle = "Año 2023\n"),
     Legend = list(legend.position = "bottom", 
                   legend.direction = "vertical")))
 
@@ -277,12 +314,13 @@ Plot.Mapa(
   limpio   = FALSE,
  # centroide = "TOLIMA",
   estatico = TRUE,
+  SiNoLegend = c("Sí", "No"), 
   estilo   = list(
     Style = "SiNo", Theme = 5, anchoBorde = 0.2,
     labelX = "", 
     labelY = "",
-    Labs  = list(subtitle = "Año 2023\n"),
-    Legend = list(legend.position = "right", 
+    Labs  = list(fill = "¿Acceso dificil?", subtitle = "Año 2023\n"),
+    Legend = list(legend.position = "bottom", 
                   legend.direction = "horizontal")))
 
 # Mapa calor total de habitantes.
@@ -367,7 +405,7 @@ Plot.Mapa(
     labelX = "", 
     labelY = "",
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
-    Labs  = list(subtitle = "Año 2021\n", caption = "(*) Tasa de Transito"),
+    Labs  = list(fill = "Tasa de transito (%)", subtitle = "Año 2021\n"),
     Text  = list(color = "#011532", size = 0)
   ))
   
@@ -390,7 +428,7 @@ Plot.Mapa(
     labelX = "", 
     labelY = "",
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
-    Labs  = list(subtitle = "Año 2021\n", caption = "(*) Tasa de Transito"),
+    Labs  = list(fill = "Tasa de transito (%)", subtitle = "Año 2021\n"),
     Text  = list(color = "#011532", size = 0)
   ))
 
@@ -407,14 +445,441 @@ Plot.Mapa(
   #centroideMapa = c("TOLIMA"),
   cortes        = c(0, 30, 40, Inf),  
   colores       = c("red", "yellow", "#10F235"),
-  estatico = FALSE,
+  estatico = TRUE,
   estilo   = list(
     Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
     labelX = "", 
     labelY = "",
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
-    Labs  = list(subtitle = "Año 2021\n", caption = "(*) Tasa de Transito"),
+    Labs  = list(fill = "Tasa de transito (%)", subtitle = "Año 2021\n", caption = "NA: No Aplica"),
     Text  = list(color = "#011532", size = 0)
   ))
 
 
+# Parte 3. Inscritos ----
+
+# Base de datos tendencias por poblaciones
+
+Ten_Ins <- Tendencias %>% filter(Poblacion == "Aspirantes")
+Ten_Adm <- Tendencias %>% filter(Poblacion == "Admitidos")
+Ten_Mpvez <- Tendencias %>% filter(Poblacion == "Mpvez")
+
+# Base de datos poblaciones por departamentos
+
+Dep_Ins <- Departamentos %>% filter(Poblacion == "Aspirantes")
+Dep_Adm <- Departamentos %>% filter(Poblacion == "Admitidos")
+Dep_Mpvez <- Departamentos %>% filter(Poblacion == "Mpvez")
+
+
+# Inicio Gráficos de Tendencias
+
+# Serie Inscritos
+
+Ten_Ins %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  pivot_wider(names_from = c(Modalidad), values_from = Total) %>% 
+  mutate(Total = Oficial + Privado) %>% 
+ggplot(aes(x = Year, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,2500000))+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Inscritos en Educación Superior en Colombia", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sector
+
+Ten_Ins %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,1700000))+
+  scale_color_discrete(name = "Sector")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Inscritos en Colombia por Sector", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sexo
+
+Ten_Ins %>% filter(Variable == "Sexo") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,1500000))+
+  scale_color_discrete(name = "Sexo")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Inscritos en Colombia por Sexo", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Por Nivel
+
+Ten_Ins %>% filter(Variable == "Nivel") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,1100000))+
+  scale_color_discrete(name = "Nivel")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Inscritos en Colombia por Nivel de Fomración", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Área
+
+Ten_Ins %>% filter(Variable == "Area") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,1000000))+
+  scale_color_discrete(name = "Área")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Inscritos en Colombia por Áreas del Conocimiento", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Departamentos
+
+Plot.Mapa(
+  df       = Dep_Ins,
+  depto    = COD_DEP,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Deptos",
+  titulo   = "Total de Inscritos en Colombia por Departamentos",
+  cortes   = c(0, 10000, 100000, 500000, 1000000, Inf),
+  colores  = c("#FED600", "#02D46E", "#006389", "#FA006E", "red"),
+  colBorde = "#3A0F2D",
+  estatico = TRUE,
+  textSize = 10,
+  opacidad = 0.6,
+  estilo   = list(
+    Style  = "Intervalo", Theme = 5, 
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs   = list(fill = "Total Aspirantes", subtitle = "Años 2010 a 2021\n")
+  )
+)
+
+# Parte 4. Admitidos ----
+
+# Inicio Gráficos de Tendencias
+
+# Serie Admitidos
+
+Ten_Adm %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  pivot_wider(names_from = c(Modalidad), values_from = Total) %>% 
+  mutate(Total = Oficial + Privado) %>% 
+  ggplot(aes(x = Year, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,1500000))+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Admitidos en Educación Superior en Colombia", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sector
+
+Ten_Adm %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,750000))+
+  scale_color_discrete(name = "Sector")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Admitidos en Colombia por Sector", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sexo
+
+Ten_Adm %>% filter(Variable == "Sexo") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,750000))+
+  scale_color_discrete(name = "Sexo")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Admitidos en Colombia por Sexo", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Por Nivel
+
+Ten_Adm %>% filter(Variable == "Nivel") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,650000))+
+  scale_color_discrete(name = "Nivel")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Admitidos en Colombia por Nivel de Fomración", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Área
+
+Ten_Adm %>% filter(Variable == "Area") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,500000))+
+  scale_color_discrete(name = "Área")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Admitidos en Colombia por Áreas del Conocimiento", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Departamentos
+
+Plot.Mapa(
+  df       = Dep_Adm,
+  depto    = COD_DEP,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Deptos",
+  titulo   = "Total de Admitidos en Colombia por Departamentos",
+  cortes   = c(0, 5000, 50000, 200000, 300000, Inf),
+  colores  = c("#FED600", "#02D46E", "#006389", "#FA006E", "red"),
+  colBorde = "#3A0F2D",
+  estatico = TRUE,
+  textSize = 10,
+  opacidad = 0.6,
+  estilo   = list(
+    Style  = "Intervalo", Theme = 5, 
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs   = list(fill = "Total Admitidos", subtitle = "Años 2010 a 2021\n")
+  )
+)
+
+# Parte 5. Mpvz ----
+
+# Inicio Gráficos de Tendencias
+
+# Serie Primera Matricula
+
+Ten_Mpvez %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  pivot_wider(names_from = c(Modalidad), values_from = Total) %>% 
+  mutate(Total = Oficial + Privado) %>% 
+  ggplot(aes(x = Year, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,1100000))+
+scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Matriculados en Primer Curso en Colombia", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sector
+
+Ten_Mpvez %>% filter(Variable == "Sector") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,750000))+
+  scale_color_discrete(name = "Sector")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Matriculados en Primer Curso en Colombia por Sector", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Matriculados en Primer Curso\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por Sexo
+
+Ten_Mpvez %>% filter(Variable == "Sexo") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,600000))+
+  scale_color_discrete(name = "Sexo")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Matriculados en Primer Curso en Colombia por Sexo", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Matriculados en Primer Curso\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Por Nivel
+
+Ten_Mpvez %>% filter(Variable == "Nivel") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,550000))+
+  scale_color_discrete(name = "Nivel")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Matriculados en Primer Curso en Colombia por Nivel de Fomración", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Matriculados en Primer Curso\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Área
+
+Ten_Mpvez %>% filter(Variable == "Area") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  ggplot(aes(x = Year, y = Total, color = Modalidad)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,400000))+
+  scale_color_discrete(name = "Área")+
+  # labs(colour = "Sector")+
+  ggtitle("Evolución Total de Matriculados en Primer Curso en Colombia por Áreas del Conocimiento", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total de Matriculados en Primer Curso\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+# Por Departamentos
+
+Plot.Mapa(
+  df       = Dep_Mpvez,
+  depto    = COD_DEP,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Deptos",
+  titulo   = "Total de Matriculados en Primer Curso en Colombia por Departamentos",
+  cortes   = c(0, 5000, 50000, 200000, 300000, Inf),
+  colores  = c("#FED600", "#02D46E", "#006389", "#FA006E", "red"),
+  colBorde = "#3A0F2D",
+  estatico = TRUE,
+  textSize = 10,
+  opacidad = 0.6,
+  estilo   = list(
+    Style  = "Intervalo", Theme = 5, 
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs   = list(fill = "Total Matriculados en Primer Curso", subtitle = "Años 2010 a 2021\n")
+  )
+)
+
+# Parte 6. Mpvz - Universitaria ----
+
+Mpvez_Univer <- Tendencias %>% filter(Poblacion == "Mpvez",
+                                      Modalidad == "Universitario") %>% 
+  pivot_longer(c(`2010`:`2021`) ,names_to = "Year", values_to = "Total") %>% 
+  mutate(Year = as.numeric(Year),
+         Poblacion = ifelse(Poblacion == "Mpvez", "Primera Matrícula Universitaria", Poblacion)) %>% 
+  select(Poblacion, Year, Total)
+
+ggplot(data = Mpvez_Univer, aes(x = Year, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,600000))+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Matriculados en Primer Curso de Universidad en Colombia", subtitle = "Periodo 2010-2021\n")+
+  ylab("\n Total Matriculados \n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Parte 7. Asp-Adm-Mpvz ----
+
+# Cruzar Poblaciones
+
+Tres_pob <- bind_rows(Tres_pob, Mpvez_Univer)
+
+# Gráfico de tres poblaciones
+
+Tres_pob %>% 
+  ggplot(aes(x = Year, y = Total, color = Poblacion)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma)+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  labs(title = "Evolución Poblaciones en Educación Superior en Colombia",
+       subtitle = "Periodo 2010-2021\n",
+       color = "Población",
+       x = "\nAño",
+       y = "\n Total \n")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom",
+        legend.title = element_text("Población"))
+
+  
