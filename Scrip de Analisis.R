@@ -52,6 +52,11 @@ p1721 <- read_excel("Fuentes/Asp_Adm.xlsx",
   select(Year = Ano, Total = Pob1721) %>% 
   mutate(Poblacion = rep("Población 17 a 21 Años", 11))
 
+# Poblaciones SNIES 2018-2021
+
+Snies1821 <- read_excel("Fuentes/Asp_Adm.xlsx", 
+                    sheet = "General_New",
+                    guess_max = 600000)
 
 
 # Cruce con municipios dificil acceso a la educación superior
@@ -251,8 +256,11 @@ Plot.Mapa(
 ) -> listMaps
 
 ggdraw() +
-  draw_plot(listMaps$MapaCOL) +
-  draw_plot(listMaps$MapaSanAndres, x = .32, y = .59, width = .15, height = .35)
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.35, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.38, width = 0.055)
+
+ggsave("X.png", width = 12, height = 12)
 
 # Consolidado Sí/No Población Cabecera vs Resto
 
@@ -278,6 +286,7 @@ Plot.Mapa(
   depto    = COD_DEP,
   mpio     = COD_MPIO,
   tipo     = "SiNoMpios",
+  zoomIslas = TRUE,
   SiNoLegend = c("Sí", "No"),
  # centroideMapa = c("RISARALDA"),
   titulo   = "Municipios con mayor población en áreas rurales",
@@ -292,7 +301,13 @@ Plot.Mapa(
     labelY = "",
     Labs  = list(fill = "¿Municipio rural?", subtitle = "Año 2023\n"),
     Legend = list(legend.position = "bottom", 
-                  legend.direction = "vertical")))
+                  legend.direction = "vertical")))-> listMaps
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.32, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.35, width = 0.055)
+
 
 
 # Mapas municipios con condiciones de difícil acceso a la educación superior
@@ -306,6 +321,7 @@ Plot.Mapa(
   depto    = COD_DEP,
   mpio     = COD_MPIO,
   tipo     = "SiNoMpios",
+  zoomIslas = TRUE,
   # centroideMapa = c("RISARALDA"),
   titulo   = "Municipios con condiciones de difícil acceso \na la educación superior",
   colores  = c("#10F235", "red"),
@@ -321,7 +337,12 @@ Plot.Mapa(
     labelY = "",
     Labs  = list(fill = "¿Acceso dificil?", subtitle = "Año 2023\n"),
     Legend = list(legend.position = "bottom", 
-                  legend.direction = "horizontal")))
+                  legend.direction = "horizontal")))-> listMaps
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.29, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.32, width = 0.055)
 
 # Mapa calor total de habitantes.
 
@@ -417,6 +438,7 @@ Plot.Mapa(
   variable = Y2021,
   agregado = FALSE,
   tipo     = "Mpios",
+  zoomIslas = TRUE,
   titulo   = "Tasa de Transito Inmmediata por Municipios",
   naTo0    = TRUE,
   #centroideMapa = c("TOLIMA"),
@@ -430,7 +452,12 @@ Plot.Mapa(
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
     Labs  = list(fill = "Tasa de transito (%)", subtitle = "Año 2021\n"),
     Text  = list(color = "#011532", size = 0)
-  ))
+  )) -> listMaps
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.29, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.32, width = 0.055)
 
 # Mapa de calor por capitales
 
@@ -440,9 +467,10 @@ Plot.Mapa(
   variable = Capital,
   agregado = FALSE,
   tipo     = "Mpios",
+  zoomIslas = TRUE,
   titulo   = "Tasa de Transito Inmmediata en Capitales de \n Departamentos",
   naTo0    = TRUE,
-  #centroideMapa = c("TOLIMA"),
+  # centroideMapa = c("TOLIMA"),
   cortes        = c(0, 30, 40, Inf),  
   colores       = c("red", "yellow", "#10F235"),
   estatico = TRUE,
@@ -453,8 +481,14 @@ Plot.Mapa(
     Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
     Labs  = list(fill = "Tasa de transito (%)", subtitle = "Año 2021\n", caption = "NA: No Aplica"),
     Text  = list(color = "#011532", size = 0)
-  ))
+  ))-> listMaps
 
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.28, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.31, width = 0.055)
+
+?Plot.Mapa
 
 # Parte 3. Inscritos ----
 
@@ -946,5 +980,713 @@ ggplot(data = Tasa_absorcion, aes(x = Year, y = Total, color = Poblacion)) +
         axis.title = element_text(face="bold", color="black", size=13),
         legend.position="bottom",
         legend.title = element_text("Población"))
+
+# Parte 8. Universidad 18-21 ----
+
+# Base de datos de población universitaria
+
+Universidad <- Snies1821 %>% filter(Formacion %in% c("Universitaria", "UNIVERSITARIA"))
+
+Aspirantes <- Universidad %>% filter(Poblacion == "Inscritos")
+Admitidos <- Universidad %>% filter(Poblacion == "Admitidos")
+Mpvez <- Universidad %>% filter(Poblacion == "Mpvez")
+
+# Aspirantes ----
+
+# Serie de tiempo general
+
+Ten_Ins <- Aspirantes %>% summarise(Total = sum(Total), .by = c(Ano)) 
+
+ggplot(data= Ten_Ins, aes(x = Ano, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,1200000))+
+  # scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Inscritos Formación Universitaria en Colombia", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño")+
+  annotate(geom="text", x=2018.1, y=1100000, 
+           label= format(as.numeric(Ten_Ins[1, 2]),big.mark=","), color="red") +
+  annotate(geom="text", x=2020.95, y=1100000, 
+           label= format(as.numeric(Ten_Ins[4, 2]),big.mark=","), color="red") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+  
+# Sector
+
+Aspirantes %>% 
+  rename(Sector = `Sector IES`) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sector)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sector)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,650000))+
+  scale_color_discrete(name = "Sector")+
+  ggtitle("Evolución Inscritos en Formación Universitaria en Colombia por Sector", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Sexo
+
+Aspirantes %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sexo)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sexo)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,650000))+
+  scale_color_discrete(name = "Sexo")+
+  ggtitle("Evolución Inscritos en Formación Universitaria en Colombia por Sexo", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Metodología
+
+Aspirantes %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Metodologia)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Metodologia)) +
+  geom_point(size = 3)+
+  geom_line() +
+  scale_y_continuous(labels = comma, limits = c(0,1000000))+
+  scale_color_discrete(name = "Metodología")+
+  ggtitle("Evolución Inscritos en Formación Universitaria en Colombia por Metodología", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Inscritos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# IES
+# Programas
+
+# Admitidos ----
+
+# Serie de tiempo general
+
+Ten_Adm <- Admitidos %>% summarise(Total = sum(Total), .by = c(Ano)) 
+
+ggplot(data= Ten_Adm, aes(x = Ano, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,650000))+
+  # scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Admitidos a Formación Universitaria en Colombia", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño")+
+  annotate(geom="text", x=2018.1, y=590000, 
+           label= format(as.numeric(Ten_Adm[1, 2]),big.mark=","), color="red") +
+  annotate(geom="text", x=2020.95, y=630000, 
+           label= format(as.numeric(Ten_Adm[4, 2]),big.mark=","), color="red") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Sector
+
+Admitidos %>% 
+  rename(Sector = `Sector IES`) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sector)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sector)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,500000))+
+  scale_color_discrete(name = "Sector")+
+  ggtitle("Evolución Admitidos en Formación Universitaria en Colombia por Sector", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Sexo
+
+Admitidos %>% 
+  mutate(Sexo1 = case_when(Sexo == "Hombre"~ "Hombre",
+                           Sexo == "Mujer"~ "Mujer",
+                           Sexo == "HOMBRE"~ "Hombre",
+                           Sexo == "MUJER"~ "Mujer",
+                           Sexo == "Sin Información" ~ "Sin Información")) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sexo1)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sexo1)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,450000))+
+  scale_color_discrete(name = "Sexo")+
+  ggtitle("Evolución Admitidos en Formación Universitaria en Colombia por Sexo", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Metodología
+
+Admitidos %>% 
+  mutate(Metodologia1 = case_when(Metodologia == "Presencial" ~ "Presencial",
+                                  Metodologia == "PRESENCIAL" ~ "Presencial",
+                                  Metodologia == "Presencial-Dual" ~ "Presencial-Dual",
+                                  Metodologia == "Presencial-Virtual" ~ "Presencial-Virtual",
+                                  Metodologia == "Distancia (tradicional)" ~ "Distancia (tradicional)",
+                                  Metodologia == "DISTANCIA (TRADICIONAL)" ~ "Distancia (tradicional)",
+                                  Metodologia == "Distancia (virtual)" ~ "Distancia (virtual)",
+                                  Metodologia == "DISTANCIA (VIRTUAL)" ~ "Distancia (virtual)")) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Metodologia1)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Metodologia1)) +
+  geom_point(size = 3)+
+  geom_line() +
+  scale_y_continuous(labels = comma, limits = c(0,600000))+
+  scale_color_discrete(name = "Metodología")+
+  ggtitle("Evolución Admitidos en Formación Universitaria en Colombia por Metodología", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# IES
+# Programas
+
+# Mpvez ----
+
+# Serie de tiempo general
+
+Ten_Mpvez <- Mpvez %>% summarise(Total = sum(Total), .by = c(Ano)) 
+
+ggplot(data= Ten_Mpvez, aes(x = Ano, y = Total)) +
+  geom_point(size = 3)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,650000))+
+  # scale_x_continuous(breaks = c(2010, 2013, 2016, 2019, 2021))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Formación\nUniversitaria en Colombia", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nAño")+
+  annotate(geom="text", x=2018.1, y=470000, 
+           label= format(as.numeric(Ten_Mpvez[1, 2]),big.mark=","), color="red") +
+  annotate(geom="text", x=2020.95, y=480000, 
+           label= format(as.numeric(Ten_Mpvez[4, 2]),big.mark=","), color="red") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Sector
+
+Mpvez %>% 
+  rename(Sector = `Sector IES`) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sector)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sector)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,500000))+
+  scale_color_discrete(name = "Sector")+
+  ggtitle("Evolución Matriculados Primera Vez en Formación\nUniversitaria en Colombia por Sector", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Sexo
+
+Mpvez %>% 
+  mutate(Sexo1 = case_when(ID_Sexo == 1 ~ "Hombre",
+                           ID_Sexo == 2 ~ "Mujer",
+                           ID_Sexo == 0 ~ "Sin Información")) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Sexo1)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Sexo1)) +
+  geom_point(size = 3)+
+  geom_line()+
+  scale_y_continuous(labels = comma, limits = c(0,450000))+
+  scale_color_discrete(name = "Sexo")+
+  ggtitle("Evolución Matriculados Primera Vez en Formación\nUniversitaria en Colombia por Sexo", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Metodología
+
+Mpvez %>% 
+  mutate(Metodologia1 = case_when(Metodologia == "Presencial" ~ "Presencial",
+                                  Metodologia == "PRESENCIAL" ~ "Presencial",
+                                  Metodologia == "Presencial-Dual" ~ "Presencial-Dual",
+                                  Metodologia == "Presencial-Virtual" ~ "Presencial-Virtual",
+                                  Metodologia == "Distancia (tradicional)" ~ "Distancia (tradicional)",
+                                  Metodologia == "DISTANCIA (TRADICIONAL)" ~ "Distancia (tradicional)",
+                                  Metodologia == "Distancia (virtual)" ~ "Distancia (virtual)",
+                                  Metodologia == "DISTANCIA (VIRTUAL)" ~ "Distancia (virtual)")) %>% 
+  summarise(Total = sum(Total), .by = c(Ano, Metodologia1)) %>% 
+  ggplot(aes(x = Ano, y = Total, color = Metodologia1)) +
+  geom_point(size = 3)+
+  geom_line() +
+  scale_y_continuous(labels = comma, limits = c(0,450000))+
+  scale_color_discrete(name = "Metodología")+
+  ggtitle("Evolución Matriculados Primera Vez en Formación\nUniversitaria en Colombia por Metodología", subtitle = "Periodo 2018-2021\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nAño") +
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Global ----
+
+
+Universidad1 <- Universidad %>% summarise(Total = sum(Total), .by = c(Poblacion, Ano))
+                ggplot(data = Universidad1, aes(x = Ano, y = Total, color = Poblacion))+
+                geom_line()+
+                geom_point()+
+  labs(title = "Evolución Total Inscripciones, Admisiones y Matriculas\nPrimera Vez Formación Universitaria en Colombia",
+       subtitle = "Periodo 2018-2021\n",
+       color = "Población",
+       x = "\nAño",
+       y = "\n Total de Individuos \n")+
+       scale_y_continuous(labels = comma, limits = c(0,1200000))+
+       scale_color_discrete(breaks = c("Inscritos", "Admitidos", "Mpvez"),
+                           labels = c("Inscritos", "Admitidos", "Matriculados Primera Vez"))+
+    annotate(geom="text", x=2018.1, y=1050000, 
+           label= format(as.numeric(Universidad1[1, 3]),big.mark=","), color="red") +
+    annotate(geom="text", x=2020.9, y=1050000, 
+           label= format(as.numeric(Universidad1[4, 3]),big.mark=","), color="red") +
+    annotate(geom="text", x=2018.1, y=600000, 
+                           label= format(as.numeric(Universidad1[5, 3]),big.mark=","), color="red") +
+    annotate(geom="text", x=2020.9, y=650000, 
+                           label= format(as.numeric(Universidad1[8, 3]),big.mark=","), color="red") +
+    annotate(geom="text", x=2018.1, y=350000, 
+                           label= format(as.numeric(Universidad1[9, 3]),big.mark=","), color="red") +
+    annotate(geom="text", x=2020.9, y=350000, 
+                           label= format(as.numeric(Universidad1[12, 3]),big.mark=","), color="red") +                
+        theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom",
+        legend.title = element_text("Población", face="bold"),
+        legend.text = element_text(size = 12))
+
+# Contexto Público vs Privado
+
+Universidad2 <- Universidad %>% rename(Sector = `Sector IES`) %>% 
+  summarise(Total = sum(Total), .by = c(Sector, Poblacion, Ano)) %>% 
+  mutate(Sector1 = case_when(Sector == "Oficial" ~ "Oficial",
+                             Sector == "OFICIAL" ~ "Oficial",
+                             Sector == "Privada" ~ "Privada",
+                             Sector == "PRIVADA" ~ "Privada"))
+         
+# Textos de las facetas
+
+Text_Uni2 <- Universidad2 %>% filter(Ano %in% c(2018, 2021)) %>% 
+             mutate(Year = ifelse(Text_Uni2$Ano == 2018, 2017.5, 2021.5))
+
+# Gráfico
+
+Uni2 <- ggplot(data = Universidad2, aes(x = Ano, y = Total, color = Poblacion))+
+  geom_line()+
+  geom_point()+
+  labs(title = "Evolución Total Inscripciones, Admisiones y Matriculas Primera Vez Formación\nUniversitaria en Colombia por Sector de la Educación",
+       subtitle = "Periodo 2018-2021\n",
+       color = "Población",
+       x = "\nAño",
+       y = "\n Total de Individuos \n")+
+  xlim(2017, 2022)+
+  # scale_x_continuous(breaks = c(2017, 2018, 2019, 2020, 2021, 2022))+
+  scale_y_continuous(labels = comma, limits = c(0,750000))+
+  scale_color_discrete(breaks = c("Inscritos", "Admitidos", "Mpvez"),
+                       labels = c("Inscritos", "Admitidos", "Matriculados Primera Vez"))+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom",
+        legend.title = element_text("Población", size = 12, face="bold"),
+        legend.text = element_text(size = 12),
+        strip.text = element_text(size = 12))+
+  facet_wrap(vars(Sector1))
+
+
+Uni2 + geom_text(data = Text_Uni2,
+                 aes(x = Year, y = Total,
+                     label = format(Total, big.mark=",")))
+              
+# Análisis IES ----
+
+# Crear bases de datos
+
+IES <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>% 
+                     select(COD_INTS:Municipio_IES, Total) %>% 
+                     summarise(Institucion = max( Institucion),
+                               COD_INTS = max(COD_INTS),
+                               Principal = min(Principal),
+                               ID_Sector_IES = max(ID_Sector_IES),
+                               `Sector IES` = max(`Sector IES`),
+                               Acredita = max(Acredita, na.rm = TRUE),
+                               ID_Caracter = max(ID_Caracter),
+                               Carácter = max(Carácter),                              
+                               Total = sum(Total),
+                               .by = c(IES_PADRE))
+
+IES_Seccional <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>% 
+  select(COD_INTS:Municipio_IES, Total) %>%
+  summarise(Institucion = max( Institucion),
+            COD_DEP_IES = max(COD_DEP_IES),
+            DPTO_IES = max(DPTO_IES),
+            COD_MPIO_IES = max(COD_MPIO_IES),
+            Municipio_IES = max(Municipio_IES),
+            .by = c(IES_PADRE, COD_INTS))
+
+
+# Gráficos
+
+
+# Análisis Programas ----
+
+PROGRAMAS <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>%
+              select(Institucion, SNIES_PROGRA:Prog_Acredita, ID_Metodologia:NBC, COD_DEP_PRO:MUN_PRO, Total) %>% 
+              filter(!is.na(SNIES_PROGRA)) %>% 
+              summarise(Programa = max(Programa),
+                        Institucion = max(Institucion),
+                        Prog_Acredita = max(Prog_Acredita, na.rm = TRUE),
+                        ID_Metodologia = max(ID_Metodologia),
+                        Metodologia = max(Metodologia),
+                        ID_Area_Con = max(ID_Area_Con),
+                        Area_Con = max(Area_Con),
+                        Id_Nucleo = max(Id_Nucleo),
+                        NBC = max(NBC),
+                        COD_DEP_PRO = max(COD_DEP_PRO),
+                        DEP_Programa = max(DEP_Programa),
+                        COD_MUN_PRO = max(COD_MUN_PRO),
+                        MUN_PRO = max(MUN_PRO),
+                        Total = sum(Total),
+                        .by = c(SNIES_PROGRA)) %>% 
+             mutate(Prog_Acredita = case_when(Prog_Acredita == "SI" ~ "Sí",
+                                              Prog_Acredita == "NO" ~ "No",
+                                              is.na(Prog_Acredita) == TRUE ~ "Sin Información"),
+                    Metodologia = case_when(Metodologia == "Presencial" ~ "Presencial",
+                                             Metodologia == "PRESENCIAL" ~ "Presencial",
+                                             Metodologia == "Presencial-Dual" ~ "Presencial-Dual",
+                                             Metodologia == "Presencial-Virtual" ~ "Presencial-Virtual",
+                                             Metodologia == "Distancia (tradicional)" ~ "Distancia (tradicional)",
+                                             Metodologia == "DISTANCIA (TRADICIONAL)" ~ "Distancia (tradicional)",
+                                             Metodologia == "Distancia (virtual)" ~ "Distancia (virtual)",
+                                             Metodologia == "DISTANCIA (VIRTUAL)" ~ "Distancia (virtual)"),
+                    Area_Con = case_when(Area_Con == "INGENIERÍA, ARQUITECTURA, URBANISMO Y AFINES" ~ "Ingeniería, arquitectura, urbanismo y afines",
+                                         Area_Con == "AGRONOMÍA, VETERINARIA Y AFINES" ~ "Agronomía, veterinaria y afines",              
+                                         Area_Con == "BELLAS ARTES" ~ "Bellas artes",                                
+                                         Area_Con == "CIENCIAS DE LA SALUD" ~ "Ciencias de la salud",                         
+                                         Area_Con == "CIENCIAS SOCIALES Y HUMANAS" ~ "Ciencias sociales y humanas",                  
+                                         Area_Con == "ECONOMÍA, ADMINISTRACIÓN, CONTADURÍA Y AFINES" ~ "Economía, administración, contaduría y afines",
+                                         Area_Con == "MATEMÁTICAS Y CIENCIAS NATURALES" ~ "Matemáticas y ciencias naturales",
+                                         Area_Con == "CIENCIAS DE LA EDUCACIÓN" ~ "Ciencias de la educación",      
+                                         Area_Con == "Matemáticas y ciencias naturales" ~ "Matemáticas y ciencias naturales",   
+                                         Area_Con == "Ciencias de la educación" ~ "Ciencias de la educación",                    
+                                         Area_Con == "Bellas artes" ~ "Bellas artes",                                 
+                                         Area_Con == "Economía, administración, contaduría y afines" ~ "Economía, administración, contaduría y afines",
+                                         Area_Con == "Ingeniería, arquitectura, urbanismo y afines" ~ "Ingeniería, arquitectura, urbanismo y afines",
+                                         Area_Con == "Ciencias sociales y humanas" ~ "Ciencias sociales y humanas",                 
+                                         Area_Con == "Agronomía, veterinaria y afines" ~ "Agronomía, veterinaria y afines",             
+                                         Area_Con == "Ciencias de la salud" ~ "Ciencias de la salud",                        
+                                         Area_Con == "Sin clasificar" ~ "Sin clasificar",                              
+                                         Area_Con == "No Aplica" ~ "Sin clasificar"),
+                    NBC = str_to_sentence(NBC))
+
+# Gráficos
+
+# Metodología
+
+Met_Pro <- PROGRAMAS %>% summarise(Total = n(), .by = c(Metodologia)) %>% 
+              rename(Clase = Metodologia) %>%
+              mutate(Variable = "METODOLOGIA",
+                     Clase = factor(Clase)) 
+Gra1 <- Plot.Barras(
+  datos     = Met_Pro,
+  categoria = "METODOLOGIA",
+  estatico = TRUE,
+  #vertical = FALSE,
+  freqRelativa = TRUE,
+  ordinal   = FALSE,
+  titulo     = "Distribución Total Programas Universitarios por Metodología de Formación",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(5, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Texto = list(subtitle = "Periodo 2018-2021")))
+
+Gra1 + scale_y_continuous(limits = c(NA, 100))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+
+# Metodología - Matriculados
+
+Met_Pro_Mat <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(Metodologia)) %>% 
+  rename(Clase = Metodologia) %>%
+  mutate(Variable = "METODOLOGIA",
+         Clase = factor(Clase)) 
+Gra1 <- Plot.Barras(
+  datos     = Met_Pro_Mat,
+  categoria = "METODOLOGIA",
+  estatico = TRUE,
+  #vertical = FALSE,
+  freqRelativa = TRUE,
+  ordinal   = FALSE,
+  titulo     = "Distribución Matriculados Primera Vez por Metodología de Formación",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(5, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Texto = list(subtitle = "Periodo 2018-2021")))
+
+Gra1 + scale_y_continuous(limits = c(NA, 100))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+# Áreas del Conocimiento
+
+Area_Prog <- PROGRAMAS %>% summarise(Total = n(), .by = c(Area_Con)) %>% 
+  rename(Clase = Area_Con) %>%
+  mutate(Variable = "AREA")
+
+Gra2 <- Plot.Barras(
+  datos     = Area_Prog,
+  categoria = "AREA",
+  freqRelativa = TRUE,
+  estatico = TRUE,
+  vertical = FALSE,
+  ordinal   = FALSE,
+  titulo     = "Distribución de Programas Académicos Universitarios por Áreas del Conocimiento",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(9, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Texto = list(subtitle = "Periodo 2018-2021")))        
+
+Gra2 + 
+  scale_y_continuous(limits = c(NA, 50))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+
+# Áreas del Conocimiento
+
+Area_Prog <- PROGRAMAS %>% summarise(Total = n(), .by = c(Area_Con)) %>% 
+  rename(Clase = Area_Con) %>%
+  mutate(Variable = "AREA")
+
+Gra2 <- Plot.Barras(
+  datos     = Area_Prog,
+  categoria = "AREA",
+  freqRelativa = TRUE,
+  estatico = TRUE,
+  vertical = FALSE,
+  ordinal   = FALSE,
+  titulo     = "Distribución de Programas Académicos Universitarios por Áreas del Conocimiento",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(9, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Texto = list(subtitle = "Periodo 2018-2021")))        
+
+Gra2 + 
+  scale_y_continuous(limits = c(NA, 50))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+
+# Áreas del Conocimiento Matriculados
+
+Area_Prog_Mat <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(Area_Con)) %>% 
+  rename(Clase = Area_Con) %>%
+  mutate(Variable = "AREA")
+
+Gra2 <- Plot.Barras(
+  datos     = Area_Prog_Mat,
+  categoria = "AREA",
+  freqRelativa = TRUE,
+  estatico = TRUE,
+  vertical = FALSE,
+  ordinal   = FALSE,
+  titulo     = "Distribución Matriculados Primera Vez Programas Universitarios\npor Áreas del Conocimiento",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(9, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Texto = list(subtitle = "Periodo 2018-2021")))        
+
+Gra2 + 
+  scale_y_continuous(limits = c(NA, 40))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+# NBC
+
+NBC_Prog <- PROGRAMAS %>% summarise(Total = n(), .by = c(NBC)) %>% 
+  rename(Clase = NBC) %>%
+  mutate(Variable = "NBC") %>% arrange(desc(Total))
+
+Gra2 <- Plot.Barras(
+  datos     = NBC_Prog,
+  categoria = "NBC",
+  freqRelativa = TRUE,
+  estatico = TRUE,
+  vertical = FALSE,
+  ordinal   = TRUE,
+  titulo     = "Distribución de Programas Académicos Universitarios por Núcleos del Conocimiento",
+  labelEje   = "Porcentaje"
+  #colores   = RColorBrewer::brewer.pal(56, "Set1")
+  )        
+
+Gra2 + 
+  scale_y_continuous(limits = c(NA, 30))+
+  theme(plot.title=element_text(hjust=1, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+
+# NBC + Matriculados
+
+NBC_Prog_Mat <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(NBC)) %>% 
+  rename(Clase = NBC) %>%
+  mutate(Variable = "NBC") %>% arrange(desc(Total))
+
+Gra2 <- Plot.Barras(
+  datos     = NBC_Prog_Mat,
+  categoria = "NBC",
+  freqRelativa = TRUE,
+  estatico = TRUE,
+  vertical = FALSE,
+  ordinal   = TRUE,
+  titulo     = "Distribución Matriculados Primera Vez Programas Universitarios por Núcleos del Conocimiento",
+  labelEje   = "Porcentaje"
+  #colores   = RColorBrewer::brewer.pal(56, "Set1")
+)        
+
+Gra2 + 
+  scale_y_continuous(limits = c(NA, 30))+
+  theme(plot.title=element_text(hjust=1, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+# Áreas y NBC TreeMap
+
+Plot.Treemap(
+  datos     = PROGRAMAS,
+  variables = vars(Area_Con, NBC),
+  estatico  = TRUE,
+  estilo    = list(
+    gg.fontsize.title = 12, gg.fontsize.labels = c(15, 9),
+    gg.fontcolor.labels = c("#FFFFFF", "#212020"),
+    gg.border.lwds = c(4, 2), gg.border.col = c("#636363", "white"),
+    gg.lowerbound.cex.labels = 0.2, gg.overlap.labels = 0.1
+  )
+)  
+
+# Top 20 programas académicos - General
+
+Top_20 <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Prog_Acredita, Institucion, Metodologia)) %>% 
+          slice_max(Total, n= 20)
+
+# Top 20 programas académicos - 
+
+Top_20_Presencial <- PROGRAMAS %>% filter(Metodologia == "Presencial") %>% 
+  summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Institucion, Metodologia)) %>% 
+  slice_max(Total, n= 20)
+
+names(PROGRAMAS)
+
+
+# 
+# Plot.Barras(
+#   datos     = df1,
+#   categoria = "SEXO",
+#   estatico = FALSE)
+#   
+# View(ejConsolidadoGrad)
+# 
+# 
+# #ano       = 2020,
+#   #vertical  = FALSE)
+# 
+# 
+# 
+# Plot.Barras(datos = Met_Pro,
+#   categoria = "Metodologia",
+#   ano = 2021)
+# 
+# 
+# 
+# 
+#   
+#   vertical  = FALSE,
+#   ordinal   = FALSE,
+#   colores   = RColorBrewer::brewer.pal(5, "Set1"),
+#   titulo    = gsub("DE GR", "DE\nGR", Txt),
+#   labelEje  = "N\u00famero de Graduados",
+#   estatico  = TRUE)
+# 
+# 
+# ejConsolidadoGrad
+# names(PROGRAMAS)
+# 
+# table(PROGRAMAS$Metodologia)
+# 
+# 
+# 
+# 
+# Plot.Treemap(
+#   datos     = PROGRAMAS,
+#   variables = vars(SNIES_PROGRA),
+#   estatico  = TRUE
+# ) 
+# 
+# 
+# 
+# Plot.Treemap(
+#   datos     = PROGRAMAS,
+#   variables = vars(Area_Con),
+#   estatico  = TRUE
+# )  
+# 
+# Plot.Treemap(
+#   datos     = PROGRAMAS,
+#   variables = vars(Area_Con, NBC),
+#   estatico  = TRUE,
+#   estilo    = list(
+#     gg.fontsize.title = 12, gg.fontsize.labels = c(15, 9),
+#     gg.fontcolor.labels = c("#FFFFFF", "#212020"),
+#     gg.border.lwds = c(4, 2), gg.border.col = c("gray", "#D60D4B"),
+#     gg.lowerbound.cex.labels = 0.2, gg.overlap.labels = 0.1
+#   )
+# )  
+# 
+# Plot.Treemap(
+#   datos     = PROGRAMAS,
+#   vars(Area_Con, NBC),
+#   estatico  = TRUE,
+#   )  
+# 
+# Plot.Treemap(
+#   datos     = PROGRAMAS,
+#   variables = vars(NBC),
+#   estatico  = TRUE
+# )  
+                   
+
 
 
