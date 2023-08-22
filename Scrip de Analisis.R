@@ -1062,9 +1062,6 @@ Aspirantes %>%
         axis.text.x = element_text(size = 12, colour = "blue"),
         axis.title = element_text(face="bold", color="black", size=13))
 
-# IES
-# Programas
-
 # Admitidos ----
 
 # Serie de tiempo general
@@ -1148,9 +1145,6 @@ Admitidos %>%
   theme(axis.text.y = element_text(size = 10, face = "bold"),
         axis.text.x = element_text(size = 12, colour = "blue"),
         axis.title = element_text(face="bold", color="black", size=13))
-
-# IES
-# Programas
 
 # Mpvez ----
 
@@ -1280,7 +1274,7 @@ Universidad2 <- Universidad %>% rename(Sector = `Sector IES`) %>%
 # Textos de las facetas
 
 Text_Uni2 <- Universidad2 %>% filter(Ano %in% c(2018, 2021)) %>% 
-             mutate(Year = ifelse(Text_Uni2$Ano == 2018, 2017.5, 2021.5))
+             mutate(Year = ifelse(Ano == 2018, 2017.5, 2021.5))
 
 # Gráfico
 
@@ -1317,6 +1311,15 @@ Uni2 + geom_text(data = Text_Uni2,
 
 IES <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>% 
                      select(COD_INTS:Municipio_IES, Total) %>% 
+                     mutate(Caracter = case_when(Carácter == "Universidad" ~ "Universidad",
+                                                 Carácter == "Institución Tecnológica" ~ "Institución Tecnológica",
+                                                 Carácter == "Institución Universitaria/Escuela Tecnológica" ~ "Institución Universitaria/Escuela Tecnológica",
+                                                 Carácter == "Institución Técnica Profesional" ~ "Institución Técnica Profesional",
+                                                 Carácter == "UNIVERSIDAD" ~ "Universidad",
+                                                 Carácter == "INSTITUCIÓN TECNOLÓGICA" ~ "Institución Tecnológica",
+                                                 Carácter == "INSTITUCIÓN TÉCNICA PROFESIONAL" ~ "Institución Técnica Profesional",
+                                                 Carácter == "INSTITUCIÓN UNIVERSITARIA/ESCUELA TECNOLÓGICA" ~ "Institución Universitaria/Escuela Tecnológica"
+                                                 )) %>% 
                      summarise(Institucion = max( Institucion),
                                COD_INTS = max(COD_INTS),
                                Principal = min(Principal),
@@ -1324,7 +1327,7 @@ IES <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitari
                                `Sector IES` = max(`Sector IES`),
                                Acredita = max(Acredita, na.rm = TRUE),
                                ID_Caracter = max(ID_Caracter),
-                               Carácter = max(Carácter),                              
+                               Caracter = max(Caracter),                              
                                Total = sum(Total),
                                .by = c(IES_PADRE))
 
@@ -1337,9 +1340,130 @@ IES_Seccional <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Un
             Municipio_IES = max(Municipio_IES),
             .by = c(IES_PADRE, COD_INTS))
 
+# Tablas
+
+# IES por Sector
+
+IES_Sector <- IES %>% summarise(Total = n(), .by = c(`Sector IES`))
+IES_Sector
+
+IES_Sector_Mat <- IES %>% summarise(Total = sum(Total), .by = c(`Sector IES`))
+IES_Sector_Mat
+
+IES_Acredita <- IES %>% summarise(Total = n(), .by = c(Acredita))
+IES_Acredita
+
+IES_Acredita_Mat <- IES %>% summarise(Total = sum(Total), .by = c(Acredita))
+IES_Acredita_Mat
+
+IES_Caracter <- IES %>% summarise(Total = n(), .by = c(Caracter))
+IES_Caracter
+
+IES_Caracter_Mat <- IES %>% summarise(Total = sum(Total), .by = c(Caracter))
+IES_Caracter_Mat
+
+IES_Caracter_Sector <- IES %>% summarise(Total = n(), .by = c(`Sector IES`, Caracter))
+IES_Caracter_Sector
+
+
+
 
 # Gráficos
 
+# Mapas IES con seccionales
+
+IES_Seccional_Map <- IES_Seccional %>% 
+  summarise(Total = n(), .by = c(COD_DEP_IES)) %>% 
+  add_row(COD_DEP_IES  = 81, Total=0) %>% 
+  add_row(COD_DEP_IES  = 99, Total=0) %>%
+  add_row(COD_DEP_IES  = 94, Total=0) %>%
+  add_row(COD_DEP_IES  = 95, Total=0) %>%
+  add_row(COD_DEP_IES  = 97, Total=0) %>%
+  add_row(COD_DEP_IES  = 91, Total=0) %>%
+  add_row(COD_DEP_IES  = 88, Total=0) 
+  
+  
+Plot.Mapa(
+  df       = IES_Seccional_Map,
+  depto    = COD_DEP_IES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Deptos",
+  naTo0     = TRUE,
+  zoomIslas = TRUE,
+  titulo   = "Total de Instituciones de Educación Superior\n(IES) en Colombia por Departamentos\n",
+  cortes   = c(-1, 0, 1, 10, 50, Inf),
+  colores  = c("#FED600", "#02D46E", "#006389", "#FA006E", "red"),
+  colBorde = "#3A0F2D",
+  estatico = TRUE,
+  textSize = 10,
+  opacidad = 0.6,
+  estilo   = list(
+    Style  = "Intervalo", Theme = 5, 
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs   = list(fill = "Total IES")
+  )
+)-> listMaps
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres, x = 0.32, y = 0.735, width = 0.4)
+
+# Caracter de las IES
+
+Car_IES <- IES %>% summarise(Total = n(), .by = c(Caracter)) %>% 
+  rename(Clase = Caracter) %>%
+  mutate(Variable = "CARACTER",
+         Clase = factor(Clase)) 
+Gra1 <- Plot.Barras(
+  datos     = Car_IES,
+  categoria = "CARACTER",
+  estatico = TRUE,
+  vertical = FALSE,
+  freqRelativa = TRUE,
+  ordinal   = FALSE,
+  titulo     = "Distribución Porcentual Total IES por tipología de las instituciones",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(4, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Bar = list(width = 0.5, color = "#000000")))
+
+Gra1 + scale_y_continuous(limits = c(NA, 100))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+# Caracter de las IES - Matriculados
+
+Car_IES_Mat <- IES %>% summarise(Total = sum(Total), .by = c(Caracter)) %>% 
+  rename(Clase = Caracter) %>%
+  mutate(Variable = "CARACTER",
+         Clase = factor(Clase)) 
+Gra1 <- Plot.Barras(
+  datos     = Car_IES_Mat,
+  categoria = "CARACTER",
+  estatico = TRUE,
+  vertical = FALSE,
+  freqRelativa = TRUE,
+  ordinal   = FALSE,
+  titulo     = "Distribución Total Matriculados Primera Vez en las IES\npor Tipología de las Instituciones",
+  labelEje   = "Porcentaje",
+  colores   = RColorBrewer::brewer.pal(4, "Set1"),
+  estilo    = list(gg.Tema  = 5,
+                   gg.Bar = list(width = 0.5, color = "#000000")))
+
+Gra1 + scale_y_continuous(limits = c(NA, 100))+
+  theme(plot.title=element_text(hjust=0, size=12),
+        axis.title=element_text(size=14),
+        plot.caption=element_text(size=7),
+        legend.text=element_text(size=9),
+        axis.text = element_text(size=10))
+
+names(IES)
 
 # Análisis Programas ----
 
@@ -1391,6 +1515,19 @@ PROGRAMAS <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Univer
                                          Area_Con == "Sin clasificar" ~ "Sin clasificar",                              
                                          Area_Con == "No Aplica" ~ "Sin clasificar"),
                     NBC = str_to_sentence(NBC))
+
+
+# Tabla Total Matriculados Pvez 18-21
+
+sum(PROGRAMAS$Total)
+
+# Tabla programas acreditados 
+
+Progra_Acredita <- PROGRAMAS %>% summarise(Total = n(), .by = c(Prog_Acredita))
+Progra_Acredita
+
+Progra_Acredita_Mat <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(Prog_Acredita))
+Progra_Acredita_Mat
 
 # Gráficos
 
@@ -1475,34 +1612,6 @@ Gra2 +
         axis.text = element_text(size=10))
 
 
-# Áreas del Conocimiento
-
-Area_Prog <- PROGRAMAS %>% summarise(Total = n(), .by = c(Area_Con)) %>% 
-  rename(Clase = Area_Con) %>%
-  mutate(Variable = "AREA")
-
-Gra2 <- Plot.Barras(
-  datos     = Area_Prog,
-  categoria = "AREA",
-  freqRelativa = TRUE,
-  estatico = TRUE,
-  vertical = FALSE,
-  ordinal   = FALSE,
-  titulo     = "Distribución de Programas Académicos Universitarios por Áreas del Conocimiento",
-  labelEje   = "Porcentaje",
-  colores   = RColorBrewer::brewer.pal(9, "Set1"),
-  estilo    = list(gg.Tema  = 5,
-                   gg.Texto = list(subtitle = "Periodo 2018-2021")))        
-
-Gra2 + 
-  scale_y_continuous(limits = c(NA, 50))+
-  theme(plot.title=element_text(hjust=0, size=12),
-        axis.title=element_text(size=14),
-        plot.caption=element_text(size=7),
-        legend.text=element_text(size=9),
-        axis.text = element_text(size=10))
-
-
 # Áreas del Conocimiento Matriculados
 
 Area_Prog_Mat <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(Area_Con)) %>% 
@@ -1535,6 +1644,14 @@ Gra2 +
 NBC_Prog <- PROGRAMAS %>% summarise(Total = n(), .by = c(NBC)) %>% 
   rename(Clase = NBC) %>%
   mutate(Variable = "NBC") %>% arrange(desc(Total))
+
+NBC_Prog_Top10 <- PROGRAMAS %>% summarise(Total = n(), .by = c(NBC)) %>% 
+  rename(Clase = NBC) %>%
+  mutate(Variable = "NBC") %>% 
+  arrange(desc(Total)) %>% 
+  slice_max(Total, n= 10)
+  
+write_xlsx(NBC_Prog_Top10, "Datos/NBC_Prog_Top10.xlsx")
 
 Gra2 <- Plot.Barras(
   datos     = NBC_Prog,
@@ -1602,13 +1719,19 @@ Plot.Treemap(
 Top_20 <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Prog_Acredita, Institucion, Metodologia)) %>% 
           slice_max(Total, n= 20)
 
+write_xlsx(Top_20, "Datos/Top_20.xlsx")
+
+
 # Top 20 programas académicos - 
 
 Top_20_Presencial <- PROGRAMAS %>% filter(Metodologia == "Presencial") %>% 
-  summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Institucion, Metodologia)) %>% 
+  summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Prog_Acredita, Institucion, Metodologia)) %>% 
   slice_max(Total, n= 20)
 
-names(PROGRAMAS)
+write_xlsx(Top_20_Presencial, "Datos/Top_20_Presencial.xlsx")
+
+Top_n50 <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Programa, Prog_Acredita, Institucion, Metodologia)) %>% 
+           filter(Total <= 50)
 
 
 # 
@@ -1686,7 +1809,3 @@ names(PROGRAMAS)
 #   variables = vars(NBC),
 #   estatico  = TRUE
 # )  
-                   
-
-
-
