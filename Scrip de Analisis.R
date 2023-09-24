@@ -1,6 +1,6 @@
 ##%######################################################%##
 #                                                          #
-####    ANÁLISIS TESIS DE DOCTORADO TATINA              ####
+####    ANÁLISIS TESIS DE DOCTORADO                     ####
 #                                                          #
 ##%######################################################%##
 
@@ -14,6 +14,12 @@ library(readxl)
 library(writexl)
 library(scales)
 library(cowplot)
+library(stringr)
+library(readr)
+library(ggbrace)
+library(gt)
+library(gtExtras)
+library(patchwork)
 
 # Importar poblaciones ----
 
@@ -108,9 +114,9 @@ ggplot(data = Poblacion_Total, aes(x = YEAR, y = Total, label = Total)) +
   ggtitle("Evolución Población Proyectada Para Colombia", subtitle = "Periodo 2020-2035\n")+
   ylab("\n Población Proyectada\n ")+
   xlab("Año")+
-  annotate(geom="text", x=2020.5, y=49500000, 
+  annotate(geom="text", x=2020.5, y=49500000,
            label= format(as.numeric(Poblacion_Total[1, 4]),big.mark=","), color="red")+
-  annotate(geom="text", x=2034.5, y=57000000, 
+  annotate(geom="text", x=2034.5, y=57000000,
            label=format(as.numeric(Poblacion_Total[nrow(Poblacion_Total), 4]),big.mark=","), color="red")+
   theme(axis.text.y = element_text(size = 10, face = "bold"),
         axis.text.x = element_text(size = 12, colour = "blue"),
@@ -487,8 +493,6 @@ ggdraw() +
   draw_plot(listMaps$M_COL) +
   draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.28, width = 0.060) +
   draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.31, width = 0.055)
-
-?Plot.Mapa
 
 # Parte 3. Inscritos ----
 
@@ -1305,7 +1309,7 @@ Uni2 + geom_text(data = Text_Uni2,
                  aes(x = Year, y = Total,
                      label = format(Total, big.mark=",")))
               
-# Análisis IES ----
+# Parte 9. Análisis IES ----
 
 # Crear bases de datos
 
@@ -1319,7 +1323,8 @@ IES <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitari
                                                  Carácter == "INSTITUCIÓN TECNOLÓGICA" ~ "Institución Tecnológica",
                                                  Carácter == "INSTITUCIÓN TÉCNICA PROFESIONAL" ~ "Institución Técnica Profesional",
                                                  Carácter == "INSTITUCIÓN UNIVERSITARIA/ESCUELA TECNOLÓGICA" ~ "Institución Universitaria/Escuela Tecnológica"
-                                                 )) %>% 
+                                                 ),
+                            `Sector IES` = ifelse(`Sector IES` == "OFICIAL", "Oficial", "Privada")) %>% 
                      summarise(Institucion = max( Institucion),
                                COD_INTS = max(COD_INTS),
                                Principal = min(Principal),
@@ -1330,6 +1335,7 @@ IES <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitari
                                Caracter = max(Caracter),                              
                                Total = sum(Total),
                                .by = c(IES_PADRE))
+
 
 IES_Seccional <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>% 
   select(COD_INTS:Municipio_IES, Total) %>%
@@ -1465,7 +1471,7 @@ Gra1 + scale_y_continuous(limits = c(NA, 100))+
 
 names(IES)
 
-# Análisis Programas ----
+# Parte 10. Análisis Programas ----
 
 PROGRAMAS <- Snies1821 %>% filter(Poblacion == "Mpvez", Formacion %in% c("Universitaria", "UNIVERSITARIA")) %>%
               select(Institucion, SNIES_PROGRA:Prog_Acredita, ID_Metodologia:NBC, COD_DEP_PRO:MUN_PRO, Total) %>% 
@@ -1734,78 +1740,2046 @@ Top_n50 <- PROGRAMAS %>% summarise(Total = sum(Total), .by = c(SNIES_PROGRA, Pro
            filter(Total <= 50)
 
 
-# 
-# Plot.Barras(
-#   datos     = df1,
-#   categoria = "SEXO",
-#   estatico = FALSE)
-#   
-# View(ejConsolidadoGrad)
-# 
-# 
-# #ano       = 2020,
-#   #vertical  = FALSE)
-# 
-# 
-# 
-# Plot.Barras(datos = Met_Pro,
-#   categoria = "Metodologia",
-#   ano = 2021)
-# 
-# 
-# 
-# 
-#   
-#   vertical  = FALSE,
-#   ordinal   = FALSE,
-#   colores   = RColorBrewer::brewer.pal(5, "Set1"),
-#   titulo    = gsub("DE GR", "DE\nGR", Txt),
-#   labelEje  = "N\u00famero de Graduados",
-#   estatico  = TRUE)
-# 
-# 
-# ejConsolidadoGrad
-# names(PROGRAMAS)
-# 
-# table(PROGRAMAS$Metodologia)
-# 
-# 
-# 
-# 
-# Plot.Treemap(
-#   datos     = PROGRAMAS,
-#   variables = vars(SNIES_PROGRA),
-#   estatico  = TRUE
-# ) 
-# 
-# 
-# 
-# Plot.Treemap(
-#   datos     = PROGRAMAS,
-#   variables = vars(Area_Con),
-#   estatico  = TRUE
-# )  
-# 
-# Plot.Treemap(
-#   datos     = PROGRAMAS,
-#   variables = vars(Area_Con, NBC),
-#   estatico  = TRUE,
-#   estilo    = list(
-#     gg.fontsize.title = 12, gg.fontsize.labels = c(15, 9),
-#     gg.fontcolor.labels = c("#FFFFFF", "#212020"),
-#     gg.border.lwds = c(4, 2), gg.border.col = c("gray", "#D60D4B"),
-#     gg.lowerbound.cex.labels = 0.2, gg.overlap.labels = 0.1
-#   )
-# )  
-# 
-# Plot.Treemap(
-#   datos     = PROGRAMAS,
-#   vars(Area_Con, NBC),
-#   estatico  = TRUE,
-#   )  
-# 
-# Plot.Treemap(
-#   datos     = PROGRAMAS,
-#   variables = vars(NBC),
-#   estatico  = TRUE
-# )  
+# Parte 11.Pilo Paga y Generación E ----
+
+Pilo <- read_excel("Fuentes/Pilo_Excelencia_Equidad.xlsx", 
+                        sheet = "Pilo",
+                        guess_max = 1000) %>% 
+        mutate(across(where(is.numeric), ~replace_na(., 0)))
+
+Equidad <- read_excel("Fuentes/Pilo_Excelencia_Equidad.xlsx", 
+                   sheet = "Equidad",
+                   guess_max = 1000)%>% 
+  mutate(across(where(is.numeric), ~replace_na(., 0)))
+
+Excelencia <- read_excel("Fuentes/Pilo_Excelencia_Equidad.xlsx", 
+                      sheet = "Excelencia",
+                      guess_max = 1000)%>% 
+  mutate(across(where(is.numeric), ~replace_na(., 0)))
+
+# Eliminar variables por poblaciones
+
+Pilo <- Pilo %>% select(-c(COD_DEPTO, DEPTO_IES, IES))
+Equidad <- Equidad %>% select(-c(COD_DEPTO, DEPTO_IES, IES))
+Excelencia <- Excelencia %>% select(-c(COD_DEPTO, DEPTO_IES, IES))
+
+# Crear base de datos única Programas
+# Pilo Paga y Generación E
+
+Pilo_GenE <- Pilo %>% full_join(Equidad) %>% 
+                      full_join(Excelencia) %>% 
+             mutate(across(everything(), ~ replace_na(.x, 0)),
+                    `2019` = EQ20191 + EQ20192 + EX20191 + EX20192,
+                    `2020` = EQ20201 + EQ20202 + EX20201 + EX20202,
+                    `2021` = EQ20211 + EQ20212 + EX20211 + EX20212,
+                    `2022` = EQ20221 + EQ20222 + EX20221 + EX20222,
+                     Total = `2015` + `2016` + `2017` + `2018` + `2019`+
+                             `2020` + `2021` + `2022`,
+                    EQ2019 = EQ20191 + EQ20192,
+                    EQ2020 = EQ20201 + EQ20202,
+                    EQ2021 = EQ20211 + EQ20212,
+                    EQ2022 = EQ20221 + EQ20222,
+                    EX2019 = EX20191 + EX20192,
+                    EX2020 = EX20201 + EX20202,
+                    EX2021 = EX20211 + EX20212,
+                    EX2022 = EX20221 + EX20222
+                    ) %>% 
+             relocate(c(`2019`:`2022`, EQ2019:EX2022), .after = `2018`)
+             
+# Base de Tendencia General y por Programas
+
+Pilo_Exc_Equi <- Pilo_GenE %>% select(COD_IES:EX2022) %>% 
+       pivot_longer(cols = c(`2015`:EX2022), 
+                    names_to = "Year",
+                    values_to = "Total") %>% 
+       mutate(Programa = case_when(Year == c("2015", "2016", "2017", "2018")~ "Pilo Paga",
+                                   str_detect(Year, "EX") == TRUE ~ "Excelencia",
+                                   str_detect(Year, "EQ") == TRUE ~ "Equidad")) %>% 
+       summarise(Total = sum(Total), .by = c(Year, Programa)) %>% 
+       mutate(Ano = parse_number(Year))
+
+# Agregar Categoría General
+
+General_Pilos <- Pilo_Exc_Equi %>% 
+                 filter(is.na(Programa) | Programa == "Pilo Paga") %>% 
+                 mutate(Programa = case_when(Programa == "Pilo Paga" ~ "General",
+                                             is.na(Programa) == TRUE ~ "General"))
+
+Pilo_Exc_Equi <- bind_rows(Pilo_Exc_Equi, General_Pilos)
+
+# Gráficos de Tendencias de Programas
+
+# General
+
+Pilo_Exc_Equi_Gen <- Pilo_Exc_Equi %>% filter(Programa == "General")
+
+Pilo_Exc_Equi_Gen %>% 
+  ggplot(aes(x = Ano, y = Total)) + 
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(limits = c(0,100000))+
+  scale_x_continuous(breaks = c(2015:2022))+
+  ggtitle("Evolución Total Beneficiarios Programas Pilo Paga y Generación E", subtitle = "Periodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año") +
+  annotate(geom="text", x=2015, y=18000, label= Pilo_Exc_Equi_Gen[1, 3], color="red")+
+  annotate(geom="text", x=2018, y=3000, label= Pilo_Exc_Equi_Gen[4, 3], color="red")+
+  annotate(geom="text", x=2019, y=85000, label= Pilo_Exc_Equi_Gen[5, 3], color="red")+
+  annotate(geom="text", x=2022, y=93000, label= Pilo_Exc_Equi_Gen[8, 3], color="red")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# General + Programas
+
+# Base de datos
+
+Pilo_Exc_Equi_Gen <- Pilo_Exc_Equi %>% filter(!is.na(Programa)) 
+Pilo_Exc_Equi_Gen$Programa <- factor(Pilo_Exc_Equi_Gen$Programa, levels = c("Pilo Paga", "Equidad", "Excelencia", "General"))
+
+#Gráfico
+
+Pilo_Exc_Equi_Gen %>% 
+  ggplot(aes(x = Ano, y = Total, color = Programa)) + 
+  geom_line() +
+  geom_point() +
+  ylim(0,95000)+
+  scale_color_manual(values = c("#E7B800", "#2E9FDF", "green", "red"))+
+  geom_brace(aes(x=c(2015,2018), y = c(16000, 20000), label = "Programa Pilo Paga"), inherit.data=F, rotate=0, labelsize=5) +
+  scale_y_continuous(limits = c(0,100000))+
+  scale_x_continuous(breaks = c(2015:2022))+
+  ggtitle("Evolución Total Beneficiarios Programas Pilo Paga y Generación E", subtitle = "Periodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  annotate(geom="text", x=2015, y=6000, label= Pilo_Exc_Equi_Gen[13, 3], color="red")+
+  annotate(geom="text", x=2018, y=3000, label= Pilo_Exc_Equi_Gen[16, 3], color="red")+
+  annotate(geom="text", x=2019, y=85000, label= Pilo_Exc_Equi_Gen[17, 3], color="red")+
+  annotate(geom="text", x=2022, y=93000, label= Pilo_Exc_Equi_Gen[20, 3], color="red")+
+  annotate(geom="text", x=2019.3, y=70000, label= Pilo_Exc_Equi_Gen[5, 3], color="blue")+
+  annotate(geom="text", x=2022, y=78000, label= Pilo_Exc_Equi_Gen[8, 3], color="blue")+
+  annotate(geom="text", x=2019, y=8000, label= Pilo_Exc_Equi_Gen[9, 3], color="#2ca25f")+
+  annotate(geom="text", x=2022, y=7000, label= Pilo_Exc_Equi_Gen[12, 3], color="#2ca25f")+
+      theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# ANÁLISIS IES
+
+# Base IES
+
+IES_Final <- IES %>% select(-Total) %>% 
+             mutate(Acredita = case_when(Acredita == "SI" ~ "Sí",
+                                         Acredita == "NO" ~ "No",
+                                         is.na(Acredita) == TRUE ~ "Sin Información"))
+
+# Base Beneficiarios Programas
+
+Pilo_Exc_Equi_IES <- Pilo_GenE %>% select(COD_IES:EX2022) %>% 
+  pivot_longer(cols = c(`2015`:EX2022), 
+               names_to = "Year",
+               values_to = "Total") %>% 
+  mutate(Programa = case_when(Year == c("2015", "2016", "2017", "2018")~ "Pilo Paga",
+                              str_detect(Year, "EX") == TRUE ~ "Excelencia",
+                              str_detect(Year, "EQ") == TRUE ~ "Equidad")) %>% 
+  filter(!is.na(Programa)) %>% 
+  mutate(Year = parse_number(Year))
+
+# Cruzar base de Datos
+
+Pilo_Exc_Equi_IES <- inner_join(Pilo_Exc_Equi_IES, IES_Final, 
+                                by = join_by("COD_IES" == "IES_PADRE")) %>% 
+                     mutate(Total = ifelse(Total == 0, NA, Total),
+                            Caracter = factor(Caracter))
+
+# Gráficos
+
+# Gráfico General
+
+Pilo_Exc_Equi_IES %>% ggplot(aes(x = as.factor(Year), y = Total)) +
+  geom_boxplot(outlier.size = 0.4)+
+  ggtitle("Distribución Total Beneficiarios Programas Pilo Paga y Generación E", subtitle = "Periodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Gráfico acotado con atípicos
+
+Pilo_Exc_Equi_IES %>% ggplot(aes(x = as.factor(Year) , y = Total)) +
+  geom_boxplot(outlier.size = 0.2)+
+  scale_y_continuous(limits = c(0, 3000))+
+  ggtitle("Distribución Total Beneficiarios Programas Pilo Paga y Generación E", subtitle = "Periodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# por Sector
+
+# Gráfico
+Pilo_Exc_Equi_IES %>% ggplot(aes(x = as.factor(Year) , y = Total, colour = `Sector IES`)) +
+  geom_boxplot(outlier.shape = NA)+
+  scale_y_continuous(limits = c(0, 3000)) +
+  ggtitle("Distribución Total Beneficiarios Programas Pilo Paga y Generación E, por Sector", subtitle = "Periodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Tabla
+
+Pilo_Exc_Equi_IES %>% summarise(Total = sum(Total, na.rm = TRUE), .by = c(Year, `Sector IES`)) %>% 
+   rename(Sector = `Sector IES`) %>% 
+  Tabla(rows = vars(Year), 
+        pivotCat = Sector, 
+        pivotVar = Total,
+        encabezado  = "Sector de la educación",
+        estadistico = "Suma",
+        columnNames = c("Año", "Beneficiarios"),
+        estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0.3, 3), 
+          Titulo = "Evolución Total de beneficiarios por sector")) %>% 
+        tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+        cols_align(align = "center")
+
+
+# por Instituciones Acreditadas
+
+# Gráfico - Box plot
+Pilo_Exc_Equi_IES %>% ggplot(aes(x = as.factor(Year) , y = Total, colour = Acredita)) +
+  geom_boxplot(outlier.shape = NA)+
+  scale_y_continuous(limits = c(0, 2000)) +
+  scale_color_discrete(name = "¿Acreditación?")+
+  ggtitle("Distribución Total Beneficiarios Programas Pilo Paga y Generación E, por IES acreditadas", subtitle = "Diagrama de Cajas \nPeriodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Gráfico - violin
+Pilo_Exc_Equi_IES %>% ggplot(aes(x = as.factor(Year) , y = Total, colour = Acredita)) +
+  geom_violin()+
+  scale_y_continuous(limits = c(0, 2000)) +
+  scale_color_discrete(name = "¿Acreditación?")+
+  ggtitle("Distribución Total Beneficiarios Programas Pilo Paga y Generación E, por IES acreditadas", subtitle = "Diagrama de Violín \nPeriodo 2015-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Tabla
+
+Pilo_Exc_Equi_IES %>% summarise(Total = sum(Total, na.rm = TRUE), .by = c(Year, Acredita)) %>% 
+  Tabla(rows = vars(Year), 
+        pivotCat = Acredita, 
+        pivotVar = Total,
+        encabezado  = "Instituciones Acreditadas",
+        estadistico = "Suma",
+        columnNames = c("Año", "Beneficiarios"),
+        estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0.3, 3), 
+          Titulo = "Evolución Total de beneficiarios por IES acreditadas")) %>% 
+  tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+  cols_align(align = "center")
+
+# por caracter de las IES
+
+# Gráfico
+
+Pilo_Exc_Equi_IES %>% filter(Year %in% c(2015:2018)) %>% 
+  ggplot(aes(x = as.factor(Year) , y = Total, colour = Caracter)) +
+  geom_boxplot() +
+  scale_color_discrete(name = "Carácter de la IES")+
+  ggtitle("Distribución Total Beneficiarios Programa Pilo Paga, por Carácter de las IES", subtitle = "Periodo 2015-2018\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position="bottom")
+
+
+Pilo_Exc_Equi_IES %>% filter(Year %in% c(2019:2022)) %>% 
+  ggplot(aes(x = as.factor(Year) , y = Total, colour = Caracter)) +
+  geom_boxplot() +
+  theme(legend.position="bottom")+
+  scale_color_discrete(name = "Carácter de la IES")+
+  ggtitle("Distribución Total Beneficiarios Programas Generación E, por Carácter de las IES", subtitle = "Periodo 2019-2022\n")+
+  ylab("\n Total Beneficiarios\n ")+
+  xlab("Año")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue"),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Tabla
+
+Pilo_Exc_Equi_IES %>% summarise(Total = sum(Total, na.rm = TRUE), .by = c(Year, Caracter)) %>% 
+  Tabla(rows = vars(Year), 
+        pivotCat = Caracter, 
+        pivotVar = Total,
+        encabezado  = "Carácter de las instituciones",
+        estadistico = "Suma",
+        columnNames = c("Año", "Beneficiarios"),
+        estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0.3, 3), 
+          Titulo = "Evolución total de beneficiarios programas Pilo Paga y Generación E según el carácter de las IES")) %>% 
+  tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+  cols_align(align = "center")
+
+# Tablas Top 
+
+# Universidades - Pilo Paga
+
+Pilo_Universidad <- Pilo_Exc_Equi_IES %>% filter(Programa == "Pilo Paga", Caracter == "Universidad") %>% 
+  rename(`¿Acreditada?` = Acredita)
+
+# Top
+
+Pilo_Universidad %>% summarise(Beneficios = sum(Total, na.rm = TRUE), 
+                             .by = c(COD_IES, Institucion, `Sector IES`, `¿Acreditada?`)) %>%
+  arrange(desc(Beneficios))  %>% 
+  filter(Beneficios != 0) %>% 
+  mutate(Orden = 1:n()) %>% 
+  filter(Orden <=10 | between(Orden, n()-9 ,n())) %>% 
+  #slice_max(Beneficios, n= 30) %>%
+  select(-c(COD_IES, Orden)) %>% 
+  rename(Sector = `Sector IES`) %>% 
+  Tabla(estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0, 2), 
+          Titulo = "Evolución Total de Beneficios Programa Pilo Paga en Universidades")) %>% 
+  tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+  cols_align(align = "left", columns = "Institucion") %>% 
+  tab_row_group(label = "Universidades con menos beneficios" ,rows = 11:20, id = "grupo") %>% 
+  tab_row_group(label = "Universidades con más beneficios", rows = 1:10, id = "grupo1") %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo")
+  ) %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo1")
+  ) 
+
+# Universidades - Generación E
+
+Generacion_Universidad <- Pilo_Exc_Equi_IES %>% filter(Programa != "Pilo Paga", Caracter == "Universidad") %>% 
+  rename(`¿Acreditada?` = Acredita)
+
+
+# Top 10
+
+Generacion_Universidad %>% summarise(Beneficios = sum(Total, na.rm = TRUE), 
+                             .by = c(COD_IES, Institucion, `Sector IES`, `¿Acreditada?`)) %>%
+  arrange(desc(Beneficios))  %>% 
+  filter(Beneficios != 0) %>% 
+  mutate(Orden = 1:n()) %>% 
+  filter(Orden <=10 | between(Orden, n()-9 ,n())) %>% 
+  #slice_max(Beneficios, n= 30) %>%
+  select(-c(COD_IES, Orden)) %>% 
+  rename(Sector = `Sector IES`) %>% 
+  Tabla(estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0, 2), 
+          Titulo = "Evolución Total de Beneficios Programa Generación E por Universidades")) %>% 
+  tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+  cols_align(align = "left", columns = "Institucion") %>% 
+  tab_row_group(label = "Universidades con menos beneficios" ,rows = 11:20, id = "grupo") %>% 
+  tab_row_group(label = "Universidades con más beneficios", rows = 1:10, id = "grupo1") %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo")
+  ) %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo1")
+  ) 
+
+
+# Instituciones Universitarias - Generación E
+
+Generacion_IES <- Pilo_Exc_Equi_IES %>% filter(Programa != "Pilo Paga", Caracter == "Institución Universitaria/Escuela Tecnológica") %>% 
+                  rename(`¿Acreditada?` = Acredita)
+
+
+# Top 10
+
+  Generacion_IES %>% summarise(Beneficios = sum(Total, na.rm = TRUE), 
+                       .by = c(COD_IES, Institucion, `Sector IES`, `¿Acreditada?`)) %>%
+  arrange(desc(Beneficios))  %>% 
+    filter(Beneficios != 0) %>% 
+    mutate(Orden = 1:n()) %>% 
+    filter(Orden <=10 | between(Orden, n()-9 ,n())) %>% 
+  #slice_max(Beneficios, n= 30) %>%
+  select(-c(COD_IES, Orden)) %>% 
+  rename(Sector = `Sector IES`) %>% 
+    Tabla(estatico = TRUE,
+          colorHead   = "#99d8c9",
+          estilo      = list(
+            Tema = 11, Padding = c(0, 2), 
+            Titulo = "Evolución Total de Beneficios Programa Generación E Inst. Universitarias o Esc. Tecnológicas")) %>% 
+    tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+    cols_align(align = "left", columns = "Institucion") %>% 
+    tab_row_group(label = "Instituciones con menos beneficios" ,rows = 11:20, id = "grupo") %>% 
+    tab_row_group(label = "Instituciones con más beneficios", rows = 1:10, id = "grupo1") %>% 
+    tab_style(
+      style = cell_fill(color = "#ffeda0"),
+      locations = cells_row_groups(groups = "grupo")
+    ) %>% 
+    tab_style(
+      style = cell_fill(color = "#ffeda0"),
+      locations = cells_row_groups(groups = "grupo1")
+    ) 
+
+ 
+##  
+# Instituciones Técnicas y Tecnológicas  
+##
+  
+  # Instituciones Técnicas profesionales - Generación E
+  
+  Generacion_Tecnicas <- Pilo_Exc_Equi_IES %>% filter(Programa != "Pilo Paga", Caracter == "Institución Técnica Profesional") %>% 
+    rename(`¿Acreditada?` = Acredita,
+           Sector = `Sector IES`) %>% 
+    summarise(Beneficios = sum(Total, na.rm = TRUE), 
+            .by = c(COD_IES, Institucion, Sector, `¿Acreditada?`)) %>% 
+    arrange(desc(Beneficios))
+  
+  
+  # Instituciones Tecnológicas - Generación E
+  
+    Pilo_Exc_Equi_IES %>% filter(Programa != "Pilo Paga", Caracter == "Institución Tecnológica") %>% 
+    rename(`¿Acreditada?` = Acredita,
+           Sector = `Sector IES`) %>% 
+    summarise(Beneficios = sum(Total, na.rm = TRUE), 
+              .by = c(COD_IES, Institucion, Sector, `¿Acreditada?`)) %>% 
+      arrange(desc(Beneficios)) %>% 
+      bind_rows(Generacion_Tecnicas) %>% 
+      select(-c(COD_IES)) %>% 
+      Tabla(estatico = TRUE,
+            colorHead   = "#99d8c9",
+            estilo      = list(
+              Tema = 11, Padding = c(0, 2), 
+              Titulo = "Evolución Total de Beneficios Programas Generación E Instituciones Técnicas y Tecnológicas.")) %>% 
+      tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+      cols_align(align = "left", columns = "Institucion") %>% 
+      tab_row_group(label = "Instituciones Tecnológicas" ,rows = 1:3, id = "grupo") %>% 
+      tab_row_group(label = "Instituciones Técnicas Profesionales", rows = 4:5, id = "grupo1") %>% 
+      tab_style(
+        style = cell_fill(color = "#ffeda0"),
+        locations = cells_row_groups(groups = "grupo")
+      ) %>% 
+      tab_style(
+        style = cell_fill(color = "#ffeda0"),
+        locations = cells_row_groups(groups = "grupo1")
+      ) 
+
+# Programa Generación E - Excelencia
+ 
+Pilo_Exc_Equi_IES %>% filter(Programa == "Excelencia") %>% 
+      rename(`¿Acreditada?` = Acredita,
+             Sector = `Sector IES`) %>% 
+      summarise(Beneficios = sum(Total, na.rm = TRUE), 
+                .by = c(COD_IES, Institucion, Sector, `¿Acreditada?`, Caracter)) %>% 
+  arrange(desc(Beneficios)) %>% 
+  filter(Beneficios!=0) %>% 
+  mutate(Orden = 1:n()) %>% 
+  filter(Orden <=10 | between(Orden, n()-9 ,n())) %>% 
+  select(-c(COD_IES, Orden)) %>% 
+  Tabla(estatico = TRUE,
+        colorHead   = "#99d8c9",
+        estilo      = list(
+          Tema = 11, Padding = c(0, 2), 
+          Titulo = "Evolución Total de Beneficios del Programa Excelencia por IES")) %>% 
+  tab_source_note(source_note = "Fuente: Elaboracción propia") %>% 
+  cols_align(align = "left", columns = "Institucion") %>% 
+  tab_row_group(label = "Instituciones con menos beneficios" ,rows = 11:20, id = "grupo") %>% 
+  tab_row_group(label = "Instituciones con más beneficios", rows = 1:10, id = "grupo1") %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo")
+  ) %>% 
+  tab_style(
+    style = cell_fill(color = "#ffeda0"),
+    locations = cells_row_groups(groups = "grupo1")
+  ) 
+
+# Parte 12.Anális UNAL ----
+
+# Base de datos municipios condicones difíciles acceso a ES
+
+Mun_DificilES <- read_excel("Fuentes/Municipios Dificiles ES.xlsx", 
+                            sheet = "Hoja1",
+                            guess_max = 60000)
+
+# Contexto UNAL ----
+
+# Matriculados
+
+# Tendencia general
+
+Gen_Mat <- UnalData::Matriculados %>% 
+  summarise(Total = n(), .by = c(YEAR, SEMESTRE)) %>% 
+  mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-"))) %>% 
+  filter(YEAR >= 2010)
+
+ggplot(data = Gen_Mat, aes(x = Periodo, y = Total, group=1)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,65000))+
+  #ggtitle(, subtitle = "Periodo 2020-2035\n")+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Estudiantes Matriculados en la Universidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2022")+
+  annotate(geom="text", x="2010-1", y=42000,
+           label= "     46.753", color="red")+
+  annotate(geom="text", x="2022-2", y=61000,
+           label= "57.090     ", color="red")+
+   theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Nivel de formación
+
+Gen_Mat_Nivel <- UnalData::Matriculados %>% 
+  summarise(Total = n(), .by = c(YEAR, SEMESTRE, TIPO_NIVEL)) %>% 
+  mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-"))) %>% 
+  filter(YEAR >= 2010)
+
+ggplot(data = Gen_Mat_Nivel, aes(x = Periodo, y = Total, color = TIPO_NIVEL, group=TIPO_NIVEL)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,55000))+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Estudiantes Matriculados por Nivel de Formación en la  \nUniversidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2022")+
+  annotate(geom="text", x="2022-2", y=54000,
+           label= "50.111     ", color="blue")+
+  annotate(geom="text", x="2022-2", y=3500,
+           label= "6.979     ", color="red")+
+  scale_colour_discrete(name  ="Nivel de Formación")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13),
+        legend.position = "bottom")
+
+# Modalidades postgrado
+
+Gen_Mat_Modalidad <- UnalData::Matriculados %>% 
+  summarise(Total = n(), .by = c(YEAR, SEMESTRE, NIVEL)) %>% 
+  mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-")),
+         NIVEL = ifelse(NIVEL == "Especialidades  médicas", "Especialidades médicas", NIVEL)) %>% 
+  filter(YEAR >= 2010, !NIVEL %in% c("Pregrado", "Tecnología"))
+ 
+
+ggplot(data = Gen_Mat_Modalidad, aes(x = Periodo, y = Total, color = NIVEL, group=NIVEL)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,7000))+
+  ylab("\n Total Matriculados\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Estudiantes Matriculados en Postgrado por Modalidad \nde Formación en la Universidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2022")+
+  scale_colour_discrete(name  ="Modalidad de Formación")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Por departamentos
+
+# Por municipios
+
+# Graduados
+
+# Tendencia general
+# Nivel de formación
+# Modalidades postgrado
+# Por departamentos
+# Por municipios
+
+# Docentes y Funcionarios
+
+# Docentes
+# Tendencia general
+# Máximo nivel de formación
+
+# Funcionarios
+# Tendencia general
+
+
+# Inscritos ----
+
+# Bases de datos
+
+# Importar Base de Datos zonas rurales con 
+# condiciones de difícil acceso a la educación superior 
+
+Mun_DificilES <- read_excel("Fuentes/Municipios Dificiles ES.xlsx", 
+                            sheet = "Hoja1",
+                            guess_max = 60000)
+
+# Base aspirantes pregrado UNAL
+
+Asp_Pre <- UnalData::Aspirantes %>% 
+  filter(YEAR >= 2010, 
+        (TIPO_NIVEL == "Pregrado"  & is.na(MOD_INS) != TRUE & is.na(TIPO_INS) != TRUE)) 
+
+# Base Agregada
+
+Asp_Consolidada <- Agregar(datos = Asp_Pre,
+                    formula = SEXO + ESTRATO + INS_SEDE_NOMBRE + 
+                      ADMITIDO + TIPO_INS + MOD_INS + PAES + PEAMA ~ YEAR + SEMESTRE,
+                    frecuencia = list(2010:2023, 1:2),
+                    intervalo = list(c(2010, 1), c(2023, 2)),
+                    textNA = "No Aplica",
+                    ask = FALSE)
+
+# Fase de Gráficos
+
+# Serie de Tiempo General
+
+Gen_Asp_Pre <- Asp_Pre %>% 
+               summarise(Total = n(), .by = c(YEAR, SEMESTRE)) %>% 
+               mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-")))
+
+ggplot(data = Gen_Asp_Pre, aes(x = Periodo, y = Total, group=1)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,80000))+
+  #ggtitle(, subtitle = "Periodo 2020-2035\n")+
+  ylab("\n Total de Aspirantes\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Aspirantes a Pregrado en la Universidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2023")+
+   annotate(geom="text", x="2019-1", y=80000,
+            label= "75.681", color="red")+
+   annotate(geom="text", x="2022-2", y=15000,
+           label= "18.825", color="red")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Mapa - Por municipios de Residencia
+
+Plot.Mapa(
+  df       = Asp_Pre,
+  depto    = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Aspirantes \na la Universidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Aspirantes?", subtitle = "Periodo 2010:2023\n"),
+    Legend = list(legend.direction = "vertical")))
+
+# Mapa - Por municipios de Residencia - 2023
+
+Plot.Mapa(
+  df       = Asp_Pre %>% filter(YEAR == 2023),
+  depto    = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Aspirantes \na la Universidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Aspirantes?", subtitle = "Año 2023\n"),
+    Legend = list(legend.direction = "vertical")))
+
+
+# Tabla - Cobertura UNAL municipios en condiciones difíciles de absorción
+
+# Crear base de datos
+
+Asp_Pre_Unico <- Asp_Pre %>% filter(YEAR == 2023) %>% 
+  summarise(Total = n(), .by = c(COD_CIU_RES)) %>% 
+  mutate(Asp_UNAL = "Sí")
+
+Municipios <- read_excel("Fuentes/Divipola.xlsx", 
+                         sheet = "Hoja1",
+                         guess_max = 1000) %>% 
+              summarise(Municipio = max(Municipio), .by = c(COD_DEPT , COD_MUN ))
+
+Municipios1 <- Municipios %>% 
+               left_join(Asp_Pre_Unico, by = join_by(COD_MUN == COD_CIU_RES)) %>% 
+               left_join(Mun_DificilES, by = join_by(COD_MUN == COD_MPIO)) %>% 
+               mutate(Asp_UNAL = ifelse(is.na(Asp_UNAL), "No", Asp_UNAL),
+                      DificilES = ifelse(is.na(DificilES), "No", DificilES)) %>% 
+               filter(DificilES == "Sí")
+
+message("Cobertura UNAL municipios difícil acceso ES")
+table(Municipios1$Asp_UNAL)
+
+# Sexo
+# Serie de Tiempo
+
+Asp_Consolidada %>% filter(Variable == "SEXO") %>%
+                    pivot_wider(names_from = Clase, values_from = Total) %>% 
+                    mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+                    select(-c(YEAR, SEMESTRE)) %>% 
+                    pivot_longer(cols = -c(Variable, Periodo), names_to = "Sexo", values_to = "Total") %>% 
+                    mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sexo, group = Sexo)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,45000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \npor sexo", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+ # Transversal
+
+Asp_Consolidada %>% 
+  Plot.Barras(categoria = "SEXO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 60),
+              labelY = "Porcentaje de aspirantes (%)\n",
+              labelX = "\nSexo",
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL por Sexo",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+  
+
+# Estrato
+# Serie de Tiempo
+
+Asp_Consolidada %>% filter(Variable == "ESTRATO") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Estrato", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Estrato, group = Estrato)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,50000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \npor Estrato", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Asp_Consolidada %>% 
+  Plot.Barras(categoria = "ESTRATO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 60),
+              labelY = "Porcentaje de aspirantes (%)\n",
+              labelX = "\nEstrato",
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL por Estrato",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Por Sedes
+# Serie de Tiempo
+
+Asp_Consolidada %>% filter(Variable == "INS_SEDE_NOMBRE", YEAR >= 2015) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Sede", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sede, group = Sede)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,55000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \npor Sedes", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Asp_Consolidada %>% filter(YEAR >= 2015) %>% 
+  Plot.Barras(categoria = "INS_SEDE_NOMBRE",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 75),
+              vertical = FALSE,
+              labelY = "\nPorcentaje de aspirantes (%)\n",
+              labelX = "\nSede de la Universidad\n",
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL por Sedes",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.7),
+                            gg.Texto = list(subtitle = "Periodo 2015:2023",
+                                            caption  = "No Aplica. Hace referencia a estudiantes inscritos\n a pregrado a la Universidad de manera global")))
+
+
+# Modalidad de inscripción (REGULAR y ESPECIAL)
+# Serie de tiempo
+
+Asp_Consolidada %>% filter(Variable == "MOD_INS") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Modalidad", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Modalidad`, group = `Modalidad`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,80000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \npor Modalidad de Iscripción", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Asp_Consolidada %>% 
+  Plot.Barras(categoria = "MOD_INS",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 90),
+              labelY = "Porcentaje de aspirantes (%)\n",
+              labelX = "\nModalidad de Inscripción",
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL por Modalidad de Inscripción",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (REGULAR, PAES, PEAMA)
+# Serie de tiempo
+
+Asp_Consolidada %>% filter(Variable == "TIPO_INS", Clase != "Regular") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Programa", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Programa`, group = `Programa`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,13000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \npor Programa de Iscripción Especial", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Asp_Consolidada %>% filter(Clase != "Regular") %>% 
+  Plot.Barras(categoria = "TIPO_INS",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 70),
+              labelY = "Porcentaje de aspirantes (%)\n",
+              labelX = "\nPrograma Especial",
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL por Programas de Inscripción \nEspecial",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (PAES)
+# Serie de tiempo
+
+Asp_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,10000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        )
+
+# Modalidad de inscripción (Indígenas y Víctimas)
+# Serie de tiempo
+
+Asp_Consolidada %>% filter(Variable == "PAES", Clase %in% c("Comunidades indígenas", "Victimas del conflicto armado interno en Colombia")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0, 9000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "bottom")
+
+
+# Transversal
+
+Asp_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  Plot.Barras(categoria = "PAES",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 40),
+              labelY = "\nPorcentaje de aspirantes (%)\n",
+              labelX = "\nOpciones Programa PAES\n",
+              vertical = FALSE,
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL del \nPrograma PAES",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (PEAMA)
+# Serie de tiempo
+
+Asp_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PEAMA", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PEAMA`, group = `Opciones PEAMA`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,4000))+
+  ggtitle("Evolución Total Aspirantes a Pregrado en la Universidad Nacional de Colombia, \nPrograma PEAMA", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Aspirantes\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Asp_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  Plot.Barras(categoria = "PEAMA",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 40),
+              labelY = "\nPorcentaje de aspirantes (%)",
+              labelX = "\nOpciones PEAMA\n",
+              vertical = FALSE,
+              titulo = "Proporción de Aspirantes a Pregrado en la UNAL del \nPrograma PEAMA",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.6),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Mapa - Por municipios de Residencia Especial
+
+Asp_Pre_Especial <- Asp_Pre %>% filter(MOD_INS == "Especial") %>% 
+                    summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Asp_Pre_Especial,
+  #dpto     = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Aspirantes Inscritos \na Pregrado de Manera Especial en la Universidad \nNacional de Colombia",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 20, 100, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Aspirantes", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.25, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.27, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PAES
+
+Asp_Pre_PAES <- Asp_Pre %>% filter(MOD_INS == "Especial", TIPO_INS == "PAES") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Asp_Pre_PAES,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Aspirantes Inscritos \na Pregrado del Programa PAES en la Universidad \nNacional de Colombia",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 20, 100, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Aspirantes PAES", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.25, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.27, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PEAMA
+
+Asp_Pre_PEAMA <- Asp_Pre %>% filter(MOD_INS == "Especial", TIPO_INS == "PEAMA") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Asp_Pre_PEAMA,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Aspirantes Inscritos \na Pregrado del Programa PEAMA en la Universidad \nNacional de Colombia",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 20, 100, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Aspirantes PEAMA", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.25, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.27, width = 0.055)
+
+
+# Admitidos ----
+
+# Base admitidos pregrado UNAL
+
+Adm_Pre <- UnalData::Aspirantes %>% 
+  filter(YEAR >= 2010,
+         ADMITIDO == "Sí",
+         (TIPO_NIVEL == "Pregrado"  & is.na(MOD_INS) != TRUE & is.na(TIPO_INS) != TRUE)) 
+
+# Base Agregada
+
+Adm_Consolidada <- Agregar(datos = Adm_Pre,
+                           formula = SEXO + ESTRATO + INS_SEDE_NOMBRE + 
+                             ADMITIDO + TIPO_INS + MOD_INS + PAES + 
+                             PEAMA + AREAC_SNIES ~ YEAR + SEMESTRE,
+                           frecuencia = list(2010:2023, 1:2),
+                           intervalo = list(c(2010, 1), c(2023, 2)),
+                           textNA = "No Aplica",
+                           ask = FALSE)
+
+# Fase de Gráficos
+
+# Serie de Tiempo General
+
+Gen_Adm_Pre <- Adm_Pre %>% 
+  summarise(Total = n(), .by = c(YEAR, SEMESTRE)) %>% 
+  mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-")))
+
+ggplot(data = Gen_Adm_Pre, aes(x = Periodo, y = Total, group=1)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,8000))+
+  #ggtitle(, subtitle = "Periodo 2020-2035\n")+
+  ylab("\n Total de Admitidos\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2023")+
+  annotate(geom="text", x="2018-1", y=7700,
+            label= "7.196", color="red")+
+  annotate(geom="text", x="2013-2", y=4500,
+           label= "5.034", color="red")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+
+# Mapa - Por municipios de Residencia
+
+Plot.Mapa(
+  df       = Adm_Pre,
+  depto    = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Admitidos a la\nUniversidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Admitidos?", subtitle = "Periodo 2010:2023\n"),
+    Legend = list(legend.direction = "vertical")))
+
+# Mapa - Por municipios de Residencia - 2023
+
+Plot.Mapa(
+  df       = Adm_Pre %>% filter(YEAR == 2023),
+  depto    = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Admitidos a la\nUniversidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Admitidos?", subtitle = "Año 2023\n"),
+    Legend = list(legend.direction = "vertical")))
+
+
+# Tabla - Cobertura UNAL municipios en condiciones difíciles de absorción
+
+# Crear base de datos
+
+Adm_Pre_Unico <- Adm_Pre %>% filter(YEAR == 2023) %>% 
+  summarise(Total = n(), .by = c(COD_CIU_RES)) %>% 
+  mutate(Asp_UNAL = "Sí")
+
+Municipios <- read_excel("Fuentes/Divipola.xlsx", 
+                         sheet = "Hoja1",
+                         guess_max = 1000) %>% 
+  summarise(Municipio = max(Municipio), .by = c(COD_DEPT , COD_MUN ))
+
+Municipios1 <- Municipios %>% 
+  left_join(Adm_Pre_Unico, by = join_by(COD_MUN == COD_CIU_RES)) %>% 
+  left_join(Mun_DificilES, by = join_by(COD_MUN == COD_MPIO)) %>% 
+  mutate(Asp_UNAL = ifelse(is.na(Asp_UNAL), "No", Asp_UNAL),
+         DificilES = ifelse(is.na(DificilES), "No", DificilES)) %>% 
+  filter(DificilES == "Sí")
+
+message("Cobertura UNAL municipios difícil acceso ES")
+table(Municipios1$Asp_UNAL)
+
+# Sexo
+# Serie de Tiempo
+
+Adm_Consolidada %>% filter(Variable == "SEXO") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Sexo", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sexo, group = Sexo)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,6000))+
+  ggtitle("Evolución Total Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Sexo", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% 
+  Plot.Barras(categoria = "SEXO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 70),
+              labelY = "Porcentaje de Admitidos (%)\n",
+              labelX = "\nSexo",
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL por Sexo",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+
+# Estrato
+# Serie de Tiempo
+
+Adm_Consolidada %>% filter(Variable == "ESTRATO") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Estrato", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Estrato, group = Estrato)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,5000))+
+  ggtitle("Evolución Total Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Estrato", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% 
+  Plot.Barras(categoria = "ESTRATO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 60),
+              labelY = "Porcentaje de Admitidos (%)\n",
+              labelX = "\nEstrato",
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL por Estrato",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Por Sedes
+# Serie de Tiempo
+
+Adm_Consolidada %>% filter(Variable == "INS_SEDE_NOMBRE", YEAR >= 2015) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Sede", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sede, group = Sede)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,4000))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Sedes", subtitle = "Periodo 2015-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% filter(YEAR >= 2015) %>% 
+  Plot.Barras(categoria = "INS_SEDE_NOMBRE",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 55),
+              vertical = FALSE,
+              labelY = "\nPorcentaje de Admitidos (%)",
+              labelX = "Sede de la Universidad\n",
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL por Sedes",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.7),
+                            gg.Texto = list(subtitle = "Periodo 2015:2023",
+                                            caption  = "\nNo Aplica. Hace referencia a estudiantes admitidos\n a pregrado a la Universidad de manera global")))
+
+
+# Modalidad de inscripción (REGULAR y ESPECIAL)
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "MOD_INS") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Modalidad", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Modalidad`, group = `Modalidad`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,7000))+
+  ggtitle("Evolución Total Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Modalidad de Inscripción", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% 
+  Plot.Barras(categoria = "MOD_INS",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 90),
+              labelY = "Porcentaje de Admitidos (%)\n",
+              labelX = "\nModalidad de Inscripción",
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL por Modalidad de Inscripción",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (REGULAR, PAES, PEAMA)
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "TIPO_INS", Clase != "Regular") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Programa", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Programa`, group = `Programa`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,1100))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Programa de Inscripción Especial", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% filter(Clase != "Regular") %>% 
+  Plot.Barras(categoria = "TIPO_INS",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 70),
+              labelY = "Porcentaje de Admitidos (%)\n",
+              labelX = "\nPrograma",
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL por \nPrograma de Inscripción Especial",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (PAES)
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0, 400))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+# Modalidad de inscripción (Indígenas y Víctimas)
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "PAES", Clase %in% c("Comunidades indígenas", "Victimas del conflicto armado interno en Colombia")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0, 400))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "bottom")
+
+# Transversal
+
+Adm_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  Plot.Barras(categoria = "PAES",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 40),
+              labelY = "\nPorcentaje de Admitidos (%)\n",
+              labelX = "\nOpciones Programa PAES\n",
+              vertical = FALSE,
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL \nPrograma PAES",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Modalidad de inscripción (PEAMA)
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PEAMA", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PEAMA`, group = `Opciones PEAMA`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,300))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \nPrograma PEAMA", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  Plot.Barras(categoria = "PEAMA",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 40),
+              labelY = "\nPorcentaje de Admitidos (%)",
+              labelX = "\nModalidades PEAMA\n",
+              vertical = FALSE,
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL, \nPrograma PEAMA",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Mapa - Por municipios de Residencia Especial
+
+Adm_Pre_Especial <- Adm_Pre %>% filter(MOD_INS == "Especial") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Adm_Pre_Especial,
+  #dpto     = COD_DEP_RES,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Admitidos Inscritos \na Pregrado de Manera Especial en la Universidad \nNacional de Colombia",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 20, 100, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Admitidos", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.27, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.29, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PAES
+
+Adm_Pre_PAES <- Adm_Pre %>% filter(MOD_INS == "Especial", TIPO_INS == "PAES") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Adm_Pre_PAES,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Admitidos \na Pregrado del Programa PAES en la UNAL",
+  naTo0    = TRUE,
+  #centroideMapa = c("NARIÑO"),
+  cortes        = c(0, 10, 50, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Admitidos PAES", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.27, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.29, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PEAMA
+
+Adm_Pre_PEAMA <- Adm_Pre %>% filter(MOD_INS == "Especial", TIPO_INS == "PEAMA") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_RES, COD_CIU_RES))
+
+
+Plot.Mapa(
+  df       = Adm_Pre_PEAMA,
+  mpio     = COD_CIU_RES,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Admitidos a \nPregrado del Programa PEAMA en la UNAL",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 10, 50, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Admitidos PEAMA", subtitle = "Periodo 2010:2023\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.27, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.29, width = 0.055)
+
+#Por áreas del Conocimiento
+
+# Serie de tiempo
+
+Adm_Consolidada %>% filter(Variable == "AREAC_SNIES", !Clase %in% c("No Aplica", "Sin información")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Área SNIES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Área SNIES`, group = `Área SNIES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,3500))+
+  ggtitle("Evolución Total de Admitidos a Pregrado en la Universidad Nacional de Colombia, \npor Áreas del Conocimiento", subtitle = "Periodo 2010-2023\n")+
+  ylab("\n Admitidos\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Adm_Consolidada %>% filter(!Clase %in% c("No Aplica", "Sin información")) %>%
+  Plot.Barras(categoria = "AREAC_SNIES",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 53),
+              labelY = "\nPorcentaje de Admitidos (%)",
+              labelX = "\nÁrea del Conocimiento SNIES\n",
+              vertical = FALSE,
+              titulo = "Proporción de Admitidos a Pregrado en la UNAL \npor Áreas del Conocimiento",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2023")))
+
+# Matriculados PVEZ ----
+
+# Base Matriculados Primera Vez pregrado UNAL
+
+Mpvez_Pre <- UnalData::Matriculados %>% 
+  filter(YEAR >= 2010,
+         TIPO_NIVEL == "Pregrado", 
+         MAT_PVEZ == "Sí") 
+
+
+# Base Agregada
+
+Mpvez_Consolidada <- Agregar(datos = Mpvez_Pre,
+                           formula = SEXO + ESTRATO + SEDE_NOMBRE_MAT + 
+                           + MOD_ADM + TIPO_ADM + PAES + PEAMA + 
+                             AREAC_SNIES ~ YEAR + SEMESTRE,
+                           frecuencia = list(2010:2022, 1:2),
+                           intervalo = list(c(2010, 1), c(2022, 2)),
+                           textNA = "No Aplica",
+                           ask = FALSE)
+
+# Fase de Gráficos
+
+# Serie de Tiempo General
+
+Gen_Mpvez_Pre <- Mpvez_Pre %>% 
+  summarise(Total = n(), .by = c(YEAR, SEMESTRE)) %>% 
+  mutate(Periodo = factor(paste(YEAR, SEMESTRE, sep = "-")))
+
+ggplot(data = Gen_Mpvez_Pre, aes(x = Periodo, y = Total, group=1)) +
+  geom_point(size = 2)+
+  geom_line() + 
+  scale_y_continuous(labels = comma, limits = c(0,8000))+
+  #ggtitle(, subtitle = "Periodo 2020-2035\n")+
+  ylab("\n Total de Matriculados Primera Vez\n ")+
+  xlab("\nPeriodo")+
+  labs(title = "Evolución Total de Matriculados Primera Vez en Pregrado \nUniversidad Nacional de Colombia",
+       subtitle = "Periodo 2010:2022")+
+  annotate(geom="text", x="2010-1", y=5500,
+           label= "  5096", color="red")+
+  annotate(geom="text", x="2022-2", y=4100,
+           label= "4522", color="red")+
+  theme(axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 12, colour = "blue", angle = 90, vjust = 0.5, hjust=1),
+        axis.title = element_text(face="bold", color="black", size=13))
+
+# Mapa - Por municipios de Residencia
+
+Plot.Mapa(
+  df       = Mpvez_Pre,
+  depto    = COD_DEP_PROC,
+  mpio     = COD_CIU_PROC,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Matriculados Primera \nVez en la Universidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Matriculados \nPrimera Vez?", subtitle = "Periodo 2010:2022\n"),
+    Legend = list(legend.direction = "vertical")))
+
+# Mapa - Por municipios de Residencia - 2023
+
+Plot.Mapa(
+  df       = Mpvez_Pre %>% filter(YEAR == 2022),
+  depto    = COD_DEP_PROC,
+  mpio     = COD_CIU_PROC,
+  tipo     = "SiNoMpios",
+  zoomIslas = FALSE,
+  SiNoLegend = c("Sí", "No"),
+  #centroideMapa = c("ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA"),
+  titulo   = "Municipios de Residencia con Matriculados Primera \nVez en la Universidad Nacional de Colombia",
+  colores  = c("red", "#10F235"),
+  opacidad = 1,
+  textSize = 0,
+  limpio   = FALSE,
+  estatico = TRUE,
+  estilo   = list(
+    Style = "SiNo", Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Labs  = list(fill = "¿Matriculados \nPrimera Vez?", subtitle = "Año 2022\n"),
+    Legend = list(legend.direction = "vertical")))
+
+
+# Tabla - Cobertura UNAL municipios en condiciones difíciles de absorción
+
+# Crear base de datos
+
+Mpvez_Pre_Unico <- Mpvez_Pre %>% filter(YEAR == 2022) %>% 
+  summarise(Total = n(), .by = c(COD_CIU_PROC)) %>% 
+  mutate(Asp_UNAL = "Sí")
+
+Municipios <- read_excel("Fuentes/Divipola.xlsx", 
+                         sheet = "Hoja1",
+                         guess_max = 1000) %>% 
+  summarise(Municipio = max(Municipio), .by = c(COD_DEPT , COD_MUN ))
+
+Municipios1 <- Municipios %>% 
+  left_join(Mpvez_Pre_Unico, by = join_by(COD_MUN == COD_CIU_PROC)) %>% 
+  left_join(Mun_DificilES, by = join_by(COD_MUN == COD_MPIO)) %>% 
+  mutate(Asp_UNAL = ifelse(is.na(Asp_UNAL), "No", Asp_UNAL),
+         DificilES = ifelse(is.na(DificilES), "No", DificilES)) %>% 
+  filter(DificilES == "Sí")
+
+message("Cobertura UNAL municipios difícil acceso ES")
+table(Municipios1$Asp_UNAL)
+
+# Sexo
+# Serie de Tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "SEXO") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Sexo", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sexo, group = Sexo)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,4000))+
+  ggtitle("Evolución Total Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Sexo", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% 
+  Plot.Barras(categoria = "SEXO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 70),
+              labelY = "Porcentaje de Matriculados Primera Vez (%)\n",
+              labelX = "\nSexo",
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL por Sexo",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+
+# Estrato
+# Serie de Tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "ESTRATO") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Estrato", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Estrato, group = Estrato)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,4000))+
+  ggtitle("Evolución Total Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Estrato", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% 
+  Plot.Barras(categoria = "ESTRATO",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 60),
+              labelY = "Porcentaje de Matriculados Primera Vez (%)\n",
+              labelX = "\nEstrato",
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL por Estrato",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+# Por Sedes
+# Serie de Tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "SEDE_NOMBRE_MAT") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Sede", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = Sede, group = Sede)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,3500))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Sedes", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>%  
+  Plot.Barras(categoria = "SEDE_NOMBRE_MAT",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 55),
+              vertical = FALSE,
+              labelY = "\nPorcentaje de Matriculados Primera Vez (%)",
+              labelX = "Sede de la Universidad\n",
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL por Sedes",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.7),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+
+# Modalidad de inscripción (REGULAR y ESPECIAL)
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "MOD_ADM") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Modalidad", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Modalidad`, group = `Modalidad`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,5000))+
+  ggtitle("Evolución Total Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Modalidad de Inscripción", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% 
+  Plot.Barras(categoria = "MOD_ADM",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 90),
+              labelY = "Porcentaje de Matriculados Primera Vez (%)\n",
+              labelX = "\nModalidad de Inscripción",
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL por Modalidad de Inscripción",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+# Modalidad de inscripción (REGULAR, PAES, PEAMA)
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "TIPO_ADM", Clase != "Regular") %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Programa", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Programa`, group = `Programa`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,800))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Tipo de Inscripción Especial", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% filter(Clase != "Regular") %>% 
+  Plot.Barras(categoria = "TIPO_ADM",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 70),
+              labelY = "Porcentaje de Matriculados Primera Vez (%)\n",
+              labelX = "\nPrograma",
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL por \nTipo de Inscripción Especial",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+# Modalidad de inscripción (PAES)
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0, 300))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+# Modalidad de inscripción (Indígenas y Víctimas)
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "PAES", Clase %in% c("Comunidades indígenas", "Victimas del conflicto armado interno en Colombia")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PAES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PAES`, group = `Opciones PAES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0, 300))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \nPrograma PAES", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "bottom")
+
+# Transversal
+
+Mpvez_Consolidada %>% filter(Variable == "PAES", !Clase %in% c("No Aplica", "De La Paz")) %>%
+  Plot.Barras(categoria = "PAES",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 40),
+              labelY = "\nPorcentaje de Matriculados Primera Vez (%)\n",
+              labelX = "\nOpciones Programa PAES\n",
+              vertical = FALSE,
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL \nPrograma PAES",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+# Modalidad de inscripción (PEAMA)
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Opciones PEAMA", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Opciones PEAMA`, group = `Opciones PEAMA`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,250))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \nPrograma PEAMA", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% filter(Variable == "PEAMA", !Clase %in% c("No Aplica")) %>%
+  Plot.Barras(categoria = "PEAMA",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 43),
+              labelY = "\nPorcentaje de Matriculados Primera Vez (%)",
+              labelX = "\nModalidades PEAMA\n",
+              vertical = FALSE,
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL, \nPrograma PEAMA",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.55),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+# Mapa - Por municipios de Residencia Especial
+
+Mpvez_Pre_Especial <- Mpvez_Pre %>% filter(MOD_ADM == "Especial") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_PROC, COD_CIU_PROC))
+
+
+Plot.Mapa(
+  df       = Mpvez_Pre_Especial,
+  #dpto     = COD_DEP_RES,
+  mpio     = COD_CIU_PROC,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Matriculados Primera \nVez en Pregrado admitidos de Manera Especial en la \nUniversidad Nacional de Colombia",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 20, 100, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Matriculados Primera Vez", subtitle = "Periodo 2010:2022\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.25, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.27, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PAES
+
+Mpvez_Pre_PAES <- Mpvez_Pre %>% filter(MOD_ADM == "Especial", TIPO_ADM == "PAES") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_PROC, COD_CIU_PROC))
+
+
+Plot.Mapa(
+  df       = Mpvez_Pre_PAES,
+  mpio     = COD_CIU_PROC,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Matriculados Primera \nVez a Pregrado del Programa PAES en la UNAL",
+  naTo0    = TRUE,
+  #centroideMapa = c("NARIÑO"),
+  cortes        = c(0, 10, 50, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Matriculados Primera Vez PAES", subtitle = "Periodo 2010:2022\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.31, y = 0.27, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.36, y = 0.29, width = 0.055)
+
+# Mapa - Por municipios de Residencia Especial - PEAMA
+
+Mpvez_Pre_PEAMA <- Mpvez_Pre %>% filter(MOD_ADM == "Especial", TIPO_ADM == "PEAMA") %>% 
+  summarise(Total = n(), .by = c(COD_DEP_PROC, COD_CIU_PROC))
+
+
+Plot.Mapa(
+  df       = Mpvez_Pre_PEAMA,
+  mpio     = COD_CIU_PROC,
+  variable = Total,
+  agregado = FALSE,
+  tipo     = "Mpios",
+  zoomIslas = TRUE,
+  titulo   = "Municipios de Residencia de Matriculados Primera \nVez en Pregrado del Programa PEAMA en la UNAL",
+  naTo0    = TRUE,
+  #centroideMapa = c("TOLIMA"),
+  cortes        = c(0, 10, 50, Inf),  
+  colores       = c("red", "yellow", "#10F235"),
+  estatico = TRUE,
+  estilo   = list(
+    Style = "Intervalo",  Theme = 5, anchoBorde = 0.2,
+    labelX = "", 
+    labelY = "",
+    Legend = list(legend.position = "bottom", legend.direction = "horizontal"),
+    Labs  = list(fill = "Total Matriculados Primera Vez PEAMA", subtitle = "Periodo 2010:2022\n"),
+    Text  = list(color = "#011532", size = 0)
+  )) -> listMaps
+
+
+ggdraw() +
+  draw_plot(listMaps$M_COL) +
+  draw_plot(listMaps$M_SanAndres  , x = 0.33, y = 0.27, width = 0.060) +
+  draw_plot(listMaps$M_Providencia, x = 0.38, y = 0.29, width = 0.055)
+
+#Por áreas del Conocimiento
+
+# Serie de tiempo
+
+Mpvez_Consolidada %>% filter(Variable == "AREAC_SNIES", !Clase %in% c("No Aplica", "Sin información")) %>%
+  pivot_wider(names_from = Clase, values_from = Total) %>% 
+  mutate(Periodo = paste(YEAR, SEMESTRE, sep = "-")) %>% 
+  select(-c(YEAR, SEMESTRE)) %>% 
+  pivot_longer(cols = -c(Variable, Periodo), names_to = "Área SNIES", values_to = "Total") %>% 
+  mutate(Total = ifelse(Total == 0, NA, Total)) %>% 
+  ggplot(aes(x = Periodo, y = Total, color = `Área SNIES`, group = `Área SNIES`)) +
+  geom_line() + geom_point()+
+  scale_y_continuous(limits = c(0,3500))+
+  ggtitle("Evolución Total de Matriculados Primera Vez en Pregrado en la Universidad Nacional de Colombia, \npor Áreas del Conocimiento", subtitle = "Periodo 2010-2022\n")+
+  ylab("\n Matriculados Primera Vez\n ")+
+  xlab("\n Periodo")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Transversal
+
+Mpvez_Consolidada %>% filter(!Clase %in% c("No Aplica", "Sin información")) %>%
+  Plot.Barras(categoria = "AREAC_SNIES",
+              estatico = TRUE, 
+              freqRelativa = TRUE,
+              ylim = c(0, 53),
+              labelY = "\nPorcentaje de Matriculados Primera Vez (%)",
+              labelX = "\nÁrea del Conocimiento SNIES\n",
+              vertical = FALSE,
+              titulo = "Proporción de Matriculados Primera Vez en Pregrado en la UNAL \npor Áreas del Conocimiento",
+              estilo = list(gg.Tema = 5, 
+                            gg.Bar   = list(width = 0.5),
+                            gg.Texto = list(subtitle = "Periodo 2010:2022")))
+
+
+# Coberturas ----
